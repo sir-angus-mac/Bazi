@@ -1,0 +1,146 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<script>
+    // const 天干陽 = ["甲", "丙", "戊", "庚", "壬"]
+    // const 天干陰 = ["乙", "丁", "己", "辛", "癸"]
+    // const 地支陽 = ["子","寅","辰","午","申","戌"]  
+    // const 地支陰 = ["丑","卯","巳","未","酉","亥"] 
+
+    const 陽 = ["甲", "丙", "戊", "庚", "壬", "子","寅","辰","午","申","戌"]
+    const 陰 = ["乙", "丁", "己", "辛", "癸", "丑","卯","巳","未","酉","亥"] 
+
+    const 水 = ["壬", "癸", "子", "亥"] 
+    const 火 = ["丙", "丁", "午", "巳"]
+    const 金 = ["庚", "辛", "申", "酉"] 
+    const 木 = ["甲", "乙", "寅", "卯"]
+    const 土 = ["戊", "己", "辰", "戌", "丑", "未"]
+
+    const wuxin = ["水", "火", "金", "木", "土"] 
+    const dict = {
+        "水" : ["同我者", "我剋者", "生我者", "我生者", "剋我者"], 
+        "火" : ["剋我者", "同我者", "我剋者", "生我者", "我生者"], 
+        "金" : ["我生者", "剋我者", "同我者", "我剋者", "生我者"], 
+        "木" : ["生我者", "我生者", "剋我者", "同我者", "我剋者"], 
+        "土" : ["我剋者", "生我者", "我生者", "剋我者", "同我者"]
+    } 
+
+    function dragpoint(event) {
+        event.dataTransfer.setData("text/plain", event.target.id);
+    } 
+
+    function droppointMainEle(event) {
+        event.preventDefault();
+        var data = event.dataTransfer.getData("text/plain");
+        document.getElementById("main_element").innerHTML = data
+        main("main_element", data)
+    }  
+
+    function droppointOtherEle(event) {
+        event.preventDefault();
+        var data = event.dataTransfer.getData("text/plain");
+        document.getElementById("other_element").innerHTML = data
+        main("other_element", data)
+    } 
+
+    function main(val, data) { 
+        if (水.includes(data)) {
+            document.getElementById(val).style.color = "blue"
+        } else if (火.includes(data)) {
+            document.getElementById(val).style.color = "red"
+        } else if (金.includes(data)) {
+            document.getElementById(val).style.color = "rgb(232, 232, 87)"
+        } else if (木.includes(data)) {
+            document.getElementById(val).style.color = "green"
+        } else if (土.includes(data)) { 
+            document.getElementById(val).style.color = "rgb(134, 93, 9)" 
+        } 
+        var main_element = document.getElementById("main_element").innerHTML
+        var other_element = document.getElementById("other_element").innerHTML 
+        var main_wuxin = ""
+        var other_wuxin = ""
+        var main_type = ""
+        var other_type = ""
+        if (main_element != "ㅤ" && other_element != "ㅤ") {
+            if (水.includes(main_element)) {main_wuxin="水"} if (水.includes(other_element)) {other_wuxin="水"} 
+            if (火.includes(main_element)) {main_wuxin="火"} if (火.includes(other_element)) {other_wuxin="火"} 
+            if (金.includes(main_element)) {main_wuxin="金"} if (金.includes(other_element)) {other_wuxin="金"} 
+            if (木.includes(main_element)) {main_wuxin="木"} if (木.includes(other_element)) {other_wuxin="木"} 
+            if (土.includes(main_element)) {main_wuxin="土"} if (土.includes(other_element)) {other_wuxin="土"} 
+            if (陽.includes(main_element)) {main_type="陽"; document.getElementById("main_element").style.backgroundColor = "rgb(250, 250, 250)"} if (陽.includes(other_element)) {other_type="陽";  document.getElementById("other_element").style.backgroundColor = "rgb(250, 250, 250)"} 
+            if (陰.includes(main_element)) {main_type="陰";  document.getElementById("main_element").style.backgroundColor = "rgb(200, 200, 200)"} if (陰.includes(other_element)) {other_type="陰";  document.getElementById("other_element").style.backgroundColor = "rgb(200, 200, 200)"} 
+            for (var i = 0; i < wuxin.length; i++) { 
+                if (wuxin[i] == other_wuxin) {
+                    var rel_type = dict[main_wuxin][i] 
+                    const relationship_type = document.getElementById("relationship_type")
+                    const rel_reminder = document.getElementById("rel_reminder")
+                    const arrow = document.getElementById("arrow")
+                    if (rel_type == "我剋者") {
+                        rel_reminder.innerHTML = "我剋者"
+                        arrow.innerHTML = "→"
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(正財)"} else {relationship_type.innerHTML = "(偏財)"}
+                    } else if (rel_type == "生我者") { 
+                        rel_reminder.innerHTML = "生我者"
+                        arrow.innerHTML = "⇐"
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(正印)"} else {relationship_type.innerHTML = "(偏印)"}
+                    } else if (rel_type == "我生者") { 
+                        rel_reminder.innerHTML = "我生者"
+                        arrow.innerHTML = "⇒" 
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(食神)"} else {relationship_type.innerHTML = "(傷官)"}
+                    } else if (rel_type == "剋我者") { 
+                        rel_reminder.innerHTML = "剋我者" 
+                        arrow.innerHTML = "←"
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(正官)"} else {relationship_type.innerHTML = "(七殺)"}
+                    } else if (rel_type == "同我者") {
+                        rel_reminder.innerHTML = "同我者" 
+                        arrow.innerHTML = "="
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(比肩)"} else {relationship_type.innerHTML = "(劫財)"}
+                    } 
+                    break
+                }
+            }
+        }
+    }
+</script> 
+<body>
+    <h2 >天干(陽)</h2>  
+    <span style="color: green; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="甲">甲</span> 
+    <span style="color: red; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="丙">丙</span>
+    <span style="color: rgb(134, 93, 9); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="戊">戊</span>
+    <span style="color: rgb(232, 232, 87); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="庚">庚</span>
+    <span style="color: blue; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="壬">壬</span> 
+    <h2>天干(陰)</h2>
+    <span style="color: green; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="乙">乙</span>
+    <span style="color: red; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="丁">丁</span>
+    <span style="color: rgb(134, 93, 9); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="己">己</span>
+    <span style="color: rgb(232, 232, 87); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="辛">辛</span>
+    <span style="color: blue; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="癸">癸</span>  
+    <h2>地支(陽)</h2> 
+    <span style="color: blue; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="子">子</span>
+    <span style="color: green; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="寅">寅</span>
+    <span style="color: rgb(134, 93, 9); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="辰">辰</span>
+    <span style="color: red; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="午">午</span>
+    <span style="color: rgb(232, 232, 87); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="申">申</span> 
+    <span style="color: rgb(134, 93, 9); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="戌">戌</span> 
+    <h2>地支(陰)</h2> 
+    <span style="color: rgb(134, 93, 9); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="丑">丑</span> 
+    <span style="color: green; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="卯">卯</span>
+    <span style="color: red; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="巳">巳</span>
+    <span style="color: rgb(134, 93, 9); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="未">未</span>
+    <span style="color: rgb(232, 232, 87); font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="酉">酉</span> 
+    <span style="color: blue; font-size: x-large; margin-right: 10px;" draggable="true" ondragstart="dragpoint(event)"  id="亥">亥</span> 
+    <br> 
+    <br> 
+    <br>
+    <br>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" ondragover="event.preventDefault()" ondrop="droppointMainEle(event)" id="main_element">ㅤ</span>
+    <span style="font-size: 75px; margin-right: 10px;" id="arrow">ㅤ</span> 
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 3px; padding: 5px; border: 2px solid brown; border-style: dashed;" ondragover="event.preventDefault()" ondrop="droppointOtherEle(event)" id="other_element">ㅤ</span> 
+    <span style="margin-right: 10px; font-size: 35px; color: brown" id="rel_reminder"></span>  
+    <br>  
+    <span style="margin-right: 10px; font-size: 38px; ">ㅤㅤ</span> <span style="margin-right: 10px; font-size: 35px; " id="relationship_type">(ㅤㅤ)</span> 
+</body>  
+</html>
