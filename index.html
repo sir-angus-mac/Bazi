@@ -4,20 +4,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
-<script>
-    // const 天干陽 = ["甲", "丙", "戊", "庚", "壬"]
-    // const 天干陰 = ["乙", "丁", "己", "辛", "癸"]
-    // const 地支陽 = ["亥","寅","辰","巳","申","戌"]  
-    // const 地支陰 = ["丑","卯","午","未","酉","子"] 
-
+<script> 
     const 陽 = ["甲", "丙", "戊", "庚", "壬", "亥","寅","辰","巳","申","戌"]
     const 陰 = ["乙", "丁", "己", "辛", "癸", "丑","卯","午","未","酉","子"]  
 
-    const 水 = ["壬", "癸", "子", "亥"] 
-    const 火 = ["丙", "丁", "午", "巳"]
-    const 金 = ["庚", "辛", "申", "酉"] 
-    const 木 = ["甲", "乙", "寅", "卯"]
-    const 土 = ["戊", "己", "辰", "戌", "丑", "未"]
+    const 水 = ["水", "壬", "癸", "子", "亥"] 
+    const 火 = ["火", "丙", "丁", "午", "巳"]
+    const 金 = ["金", "庚", "辛", "申", "酉"] 
+    const 木 = ["木", "甲", "乙", "寅", "卯"]
+    const 土 = ["土", "戊", "己", "辰", "戌", "丑", "未"]
 
     const wuxin = ["水", "火", "金", "木", "土"] 
     const dict = {
@@ -27,6 +22,14 @@
         "木" : ["生我者", "我生者", "剋我者", "同我者", "我剋者"], 
         "土" : ["我剋者", "生我者", "我生者", "剋我者", "同我者"]
     } 
+
+    const 合化 = {
+        "甲己": "土",
+        "乙庚": "金",
+        "丙辛": "水",
+        "丁壬": "木",
+        "戊癸": "火",
+    }
 
     function dragpoint(event) {
         event.dataTransfer.setData("text/plain", event.target.id);
@@ -46,18 +49,22 @@
         main("other_element", data)
     } 
 
-    function main(val, data) { 
+    function getWuxinColor(data) { 
         if (水.includes(data)) {
-            document.getElementById(val).style.color = "blue"
+            return "blue"
         } else if (火.includes(data)) {
-            document.getElementById(val).style.color = "red"
+            return "red"
         } else if (金.includes(data)) {
-            document.getElementById(val).style.color = "rgb(232, 232, 87)"
+            return "rgb(232, 232, 87)"
         } else if (木.includes(data)) {
-            document.getElementById(val).style.color = "green"
+            return "green"
         } else if (土.includes(data)) { 
-            document.getElementById(val).style.color = "rgb(134, 93, 9)" 
+            return "rgb(134, 93, 9)" 
         } 
+    }
+
+    function main(val, data) { 
+        document.getElementById(val).style.color = getWuxinColor(data); 
         var main_element = document.getElementById("main_element").innerHTML
         var other_element = document.getElementById("other_element").innerHTML 
         var main_wuxin = ""
@@ -77,7 +84,9 @@
                     var rel_type = dict[main_wuxin][i] 
                     const relationship_type = document.getElementById("relationship_type")
                     const rel_reminder = document.getElementById("rel_reminder")
-                    const arrow = document.getElementById("arrow")
+                    const arrow = document.getElementById("arrow") 
+                    const spawn_info = document.getElementById("spawn_info") 
+                    const spawn_element = document.getElementById("spawn_element") 
                     if (rel_type == "我剋者") {
                         rel_reminder.innerHTML = "我剋者"
                         arrow.innerHTML = "→"
@@ -87,7 +96,7 @@
                         arrow.innerHTML = "⇐"
                         if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(正印)"} else {relationship_type.innerHTML = "(偏印)"}
                     } else if (rel_type == "我生者") { 
-                        rel_reminder.innerHTML = "我生者"
+                        rel_reminder.innerHTML = "我生者" 
                         arrow.innerHTML = "⇒" 
                         if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(傷官)"} else {relationship_type.innerHTML = "(食神)"} 
                     } else if (rel_type == "剋我者") {  
@@ -99,11 +108,23 @@
                         arrow.innerHTML = "="
                         if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(劫財)"} else {relationship_type.innerHTML = "(比肩)"} 
                     } 
+
+                    if (合化[main_element + other_element] !== undefined) {
+                        const e = 合化[main_element + other_element];
+                        spawn_info.innerHTML = "合化"
+                        spawn_element.innerHTML = e
+                        spawn_element.style.color = getWuxinColor(e);
+                    } else if (合化[other_element + main_element] !== undefined) {
+                        const e = 合化[other_element + main_element];
+                        spawn_info.innerHTML = "合化"
+                        spawn_element.innerHTML = e
+                        spawn_element.style.color = "getWuxinColor(e)";  
+                    }
                     break
                 }
             }
         }
-    } 
+    }  
 </script> 
 <body>
     <h2 >天干(陽)</h2>  
@@ -119,19 +140,19 @@
     <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="辛">辛</button>
     <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="癸">癸</button>  
     <h2>地支(陽)</h2> 
-    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="亥">亥</button>
-    <button style="background-color: white; color: green; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="寅">寅</button>
-    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="辰">辰</button>
-    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="巳">巳</button>
-    <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="申">申</button> 
-    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="戌">戌</button> 
+    <button style="background-color: white; color: green; font-size:35px; margin-right: 5px; border: solid 3px green;" draggable="true" ondragstart="dragpoint(event)"  id="寅">寅</button>
+    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px; border: solid 3px green;" draggable="true" ondragstart="dragpoint(event)"  id="辰">辰</button>
+    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px; border: solid 3px red;" draggable="true" ondragstart="dragpoint(event)"  id="巳">巳</button>
+    <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px; border: solid 3px rgb(232, 232, 87);" draggable="true" ondragstart="dragpoint(event)"  id="申">申</button> 
+    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px; border: solid 3px rgb(232, 232, 87);" draggable="true" ondragstart="dragpoint(event)"  id="戌">戌</button> 
+    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px; border: solid 3px blue;" draggable="true" ondragstart="dragpoint(event)"  id="亥">亥</button>
     <h2>地支(陰)</h2> 
-    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="丑">丑</button> 
-    <button style="background-color: white; color: green; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="卯">卯</button>
-    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="午">午</button> 
-    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="未">未</button>
-    <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="酉">酉</button> 
-    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="子">子</button> 
+    <button style="background-color: white; color: green; font-size:35px; margin-right: 5px; border: solid 3px green;" draggable="true" ondragstart="dragpoint(event)"  id="卯">卯</button>
+    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px; border: solid 3px red;" draggable="true" ondragstart="dragpoint(event)"  id="午">午</button>  
+    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px; border: solid 3px red;" draggable="true" ondragstart="dragpoint(event)"  id="未">未</button> 
+    <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px; border: solid 3px rgb(232, 232, 87);" draggable="true" ondragstart="dragpoint(event)"  id="酉">酉</button> 
+    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px; border: solid 3px blue;" draggable="true" ondragstart="dragpoint(event)"  id="子">子</button>  
+    <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px; border: solid 3px blue;" draggable="true" ondragstart="dragpoint(event)"  id="丑">丑</button> 
     <br> 
     <br> 
     <br> 
@@ -143,6 +164,7 @@
         <div style="display: block;">
             <div style="margin-right: 10px; font-size: 35px; text-align: center;" id="relationship_type">(ㅤㅤ)</div>   <br>
             <div style="font-size: 75px; margin-right: 10px; text-align: center;" id="arrow">---</div>  
+            <div style="font-size: 25px; margin-right: 10px; text-align: center;"><span id="spawn_info"></span> <span id="spawn_element" style="font-weight: bold;"></span> </div> 
         </div>
         <div style="display: block;">
             <div style="margin-right: 10px; font-size: 30px; color: brown; text-align: center;" id="rel_reminder">它</div>  <br> 
