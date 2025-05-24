@@ -7,11 +7,11 @@
 <script>
     // const 天干陽 = ["甲", "丙", "戊", "庚", "壬"]
     // const 天干陰 = ["乙", "丁", "己", "辛", "癸"]
-    // const 地支陽 = ["子","寅","辰","午","申","戌"]  
-    // const 地支陰 = ["丑","卯","巳","未","酉","亥"] 
+    // const 地支陽 = ["亥","寅","辰","巳","申","戌"]  
+    // const 地支陰 = ["丑","卯","午","未","酉","子"] 
 
-    const 陽 = ["甲", "丙", "戊", "庚", "壬", "子","寅","辰","午","申","戌"]
-    const 陰 = ["乙", "丁", "己", "辛", "癸", "丑","卯","巳","未","酉","亥"] 
+    const 陽 = ["甲", "丙", "戊", "庚", "壬", "亥","寅","辰","巳","申","戌"]
+    const 陰 = ["乙", "丁", "己", "辛", "癸", "丑","卯","午","未","酉","子"]  
 
     const 水 = ["壬", "癸", "子", "亥"] 
     const 火 = ["丙", "丁", "午", "巳"]
@@ -89,21 +89,21 @@
                     } else if (rel_type == "我生者") { 
                         rel_reminder.innerHTML = "我生者"
                         arrow.innerHTML = "⇒" 
-                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(食神)"} else {relationship_type.innerHTML = "(傷官)"}
-                    } else if (rel_type == "剋我者") { 
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(傷官)"} else {relationship_type.innerHTML = "(食神)"} 
+                    } else if (rel_type == "剋我者") {  
                         rel_reminder.innerHTML = "剋我者" 
                         arrow.innerHTML = "←"
                         if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(正官)"} else {relationship_type.innerHTML = "(七殺)"}
                     } else if (rel_type == "同我者") {
                         rel_reminder.innerHTML = "同我者" 
                         arrow.innerHTML = "="
-                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(比肩)"} else {relationship_type.innerHTML = "(劫財)"}
+                        if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {relationship_type.innerHTML = "(劫財)"} else {relationship_type.innerHTML = "(比肩)"} 
                     } 
                     break
                 }
             }
         }
-    }
+    } 
 </script> 
 <body>
     <h2 >天干(陽)</h2>  
@@ -119,22 +119,22 @@
     <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="辛">辛</button>
     <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="癸">癸</button>  
     <h2>地支(陽)</h2> 
-    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="子">子</button>
+    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="亥">亥</button>
     <button style="background-color: white; color: green; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="寅">寅</button>
     <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="辰">辰</button>
-    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="午">午</button>
+    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="巳">巳</button>
     <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="申">申</button> 
     <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="戌">戌</button> 
     <h2>地支(陰)</h2> 
     <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="丑">丑</button> 
     <button style="background-color: white; color: green; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="卯">卯</button>
-    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="巳">巳</button>
+    <button style="background-color: white; color: red; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="午">午</button> 
     <button style="background-color: white; color: rgb(134, 93, 9); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="未">未</button>
     <button style="background-color: white; color: rgb(232, 232, 87); font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="酉">酉</button> 
-    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="亥">亥</button> 
+    <button style="background-color: white; color: blue; font-size:35px; margin-right: 5px;" draggable="true" ondragstart="dragpoint(event)"  id="子">子</button> 
     <br> 
     <br> 
-    <br>
+    <br> 
     <div style="display: flex;">
         <div style="display: block;"> 
             <div style="margin-right: 10px; font-size: 30px; color: black; text-align: center;">我</div>  <br>
