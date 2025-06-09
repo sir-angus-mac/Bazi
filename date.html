@@ -2,17 +2,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fetch JSON Data</title>
+    <title>Bazi</title>
 </head>
 <body>
-<select name="year" id="year" onchange="calculate()">
+<select name="year" id="year" onchange="calculate()" style="font-size:25px"> 
 </select>
-<select name="month" id="month" onchange="calculate()">
+<span style="font-size: 25px; margin-right: 5px;" >年</span>
+<select name="month" id="month" onchange="calculate()" style="font-size:25px">
 </select>
-<select name="day" id="day" onchange="calculate()">
+<span style="font-size: 25px; margin-right: 5px;" >月</span>
+<select name="day" id="day" onchange="calculate()" style="font-size:25px">
 </select>
-<select name="hour" id="hour" onchange="calculate()">
+<span style="font-size: 25px; margin-right: 5px;" >日</span>
+<select name="hour" id="hour" onchange="calculate()" style="font-size:25px">
 </select>
+<span style="font-size: 25px; margin-right: 5px;" >時</span>  
 
 <br>
 
@@ -23,8 +27,14 @@
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white;" >年</span>
 </div> 
 <div style="display: block;"> 
+    <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan_ten_god">字字</span> 
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid white;" >日元</span> 
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_tenkan_ten_god">字字</span> 
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_tenkan_ten_god">字字</span>  
+</div>
+<div style="display: block; margin-top: 5px;"> 
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="day_tenkan">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 3px; border: 4px solid rgb(55, 55, 55); border-style: dashed;" id="day_tenkan">字</span>
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_tenkan">字</span>
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_tenkan">字</span>
 </div>  
@@ -32,8 +42,29 @@
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_deizi">字</span>
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="day_deizi">字</span>
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_deizi">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_deizi">字</span>
-</div>  
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_deizi">字</span> 
+</div> 
+<div style="display: flex; margin-top: 10px;"> 
+    <div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="hour_deizi_main_ten_god_container">
+		<span style="font-size: 25px; margin-right: 5px; " id="hour_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
+	</div> 
+	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="day_deizi_main_ten_god_container">
+		<span style="font-size: 25px; margin-right: 5px; " id="day_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
+	</div> 
+	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="month_deizi_main_ten_god_container">
+		<span style="font-size: 25px; margin-right: 5px; " id="month_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
+	</div> 
+	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="year_deizi_main_ten_god_container">
+		<span style="font-size: 25px; margin-right: 5px; " id="year_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
+	</div> 
+</div> 
+
+<div style="display: flex; margin-top: 10px;"> 
+    <div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="hour_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="day_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+</div>
 
 <br>
 
@@ -50,29 +81,63 @@
     const 陽 = ["甲", "丙", "戊", "庚", "壬", "亥","寅","辰","巳","申","戌"]
     const 陰 = ["乙", "丁", "己", "辛", "癸", "丑","卯","午","未","酉","子"]  
 
+	const wuxin = ["水", "火", "金", "木", "土"] 
+    const dict = {
+        "水" : ["同我者", "我剋者", "生我者", "我生者", "剋我者"], 
+        "火" : ["剋我者", "同我者", "我剋者", "生我者", "我生者"], 
+        "金" : ["我生者", "剋我者", "同我者", "我剋者", "生我者"], 
+        "木" : ["生我者", "我生者", "剋我者", "同我者", "我剋者"], 
+        "土" : ["我剋者", "生我者", "我生者", "剋我者", "同我者"]
+    }  
+
+	const deizi_hidden_tenkan = {
+		"寅" : ["甲", "丙", "戊"],
+		"卯" : ["乙"],
+		"辰" : ["戊", "乙", "癸"],
+		"巳" : ["丙", "戊", "庚"],
+		"午" : ["丁", "己" ],
+		"未" : ["己", "丁", "乙"], 
+		"申" : ["庚", "壬", "戊"],
+		"酉" : ["辛"],
+		"戌" : ["戊", "辛", "丁"], 
+		"亥" : ["壬", "甲", ],
+		"子" : ["癸"],
+		"丑" : ["己", "癸", "辛"], 
+	}
+
     function getWuxinColor(data) { 
         if (水.includes(data)) {
             return "blue"
         } else if (火.includes(data)) {
             return "red"
         } else if (金.includes(data)) {
-            return "rgb(232, 232, 87)"
+            return "rgb(214, 176, 6)"
         } else if (木.includes(data)) {
             return "green"
-        } else if (土.includes(data)) { 
+        } else if (土.includes(data)) {  
             return "rgb(134, 93, 9)" 
         } 
     }
 
     function getYinYangColor(data) { 
         if (陰.includes(data)) {
-            return "rgb(211, 211, 211)"
+            return "rgb(235, 235, 235)"
         } else {
-            return "white"
+            return "white" 
         } 
     }
 
-    function paipan(){
+    /**
+ * @author szargv@wo.cn
+ * 
+ * 此日历转换类完全源于以下项目,感谢这两个项目作者的无私分享:
+ * https://github.com/nozomi199/qimen_star (八字排盘,JS源码)
+ * http://www.bieyu.com/ (详尽的历法转换原理,JS源码)
+ * 
+ * 我們現在所使用的以西元年月日表示的格里高利历(Gregorian calendar)
+ * 儒略日历(Julian day),以西元前4713年(或-4712年)1月1日12時為起點,方便各历法间的转换
+ */
+function paipan(){
     /**
      * 是否区分 早晚子 时,true则23:00-24:00算成上一天
      * @var bool
@@ -159,7 +224,7 @@
 	        var m = yy / 1000;
 	        return 1721139.29189 + 365242.1374 * m + 0.06134 * m * m + 0.00111 * m * m * m - 0.00071 * m * m * m * m;
 	    }
-	} 
+	}
 	/**
 	 * 地球在繞日运行時會因受到其他星球之影響而產生攝動(perturbation)
 	 * @param float jd 
@@ -671,6 +736,101 @@
 	    return true;
 	}
 	/**
+	 * 获取公历某个月有多少天
+	 * @param int yy
+	 * @param int mm
+	 * @return number
+	 */
+	this.GetSolarDays = function(yy, mm){
+	    if (yy < -1000 || yy > 3000) { //适用于西元-1000年至西元3000年,超出此范围误差较大
+	        return 0;
+	    }
+	    
+	    if (mm < 1 || mm > 12) { //月份超出範圍
+	        return 0;
+	    }
+	    var ndf1 = -(yy % 4 == 0); //可被四整除
+	    var ndf2 = ((yy % 400 == 0) - (yy % 100 == 0)) && (yy > 1582);
+	    var ndf = ndf1 + ndf2;
+	    return 30 + ((Math.abs(mm - 7.5) + 0.5) % 2) - (mm == 2) * (2 + ndf);
+	}
+	/**
+	 * 获取农历某个月有多少天
+	 * @param int yy
+	 * @param int mm
+	 * @param bool isLeap
+	 * @return number
+	 */
+	this.GetLunarDays = function(yy, mm, isLeap){
+	    if (yy < -1000 || yy > 3000) { //适用于西元-1000年至西元3000年,超出此范围误差较大
+	        return 0;
+	    }
+	    if (mm < 1 || mm > 12){ //輸入月份必須在1-12月之內
+	        return 0;
+	    }
+	    var lm = GetZQandSMandLunarMonthCode(yy);
+		var jdzq = lm[0];
+		var jdnm = lm[1];
+		var mc = lm[2];
+	    
+	    var leap = 0; //若閏月旗標為0代表無閏月
+	    for (var j = 1; j <= 14; j++) { //確認指定年前一年11月開始各月是否閏月
+	        if (mc[j] - Math.floor(mc[j]) > 0) { //若是,則將此閏月代碼放入閏月旗標內
+	            leap = Math.floor(mc[j] + 0.5); //leap=0對應阴曆11月,1對應阴曆12月,2對應阴曆隔年1月,依此類推.
+	            break;
+	        }
+	    }
+	    
+	    mm = mm + 2; //11月對應到1,12月對應到2,1月對應到3,2月對應到4,依此類推
+	    
+		var nofd = [];
+	    for (var i = 0; i <= 14; i++) { //求算阴曆各月之大小,大月30天,小月29天
+	        nofd[i] = Math.floor(jdnm[i + 1] + 0.5) - Math.floor(jdnm[i] + 0.5); //每月天數,加0.5是因JD以正午起算
+	    }
+	    
+	    var dy = 0; //当月天数
+	    var er = 0; //若輸入值有錯誤,er值將被設定為非0
+	    
+	    if (isLeap){ //若是閏月
+	        if (leap < 3) { //而旗標非閏月或非本年閏月,則表示此年不含閏月.leap=0代表無閏月,=1代表閏月為前一年的11月,=2代表閏月為前一年的12月
+	            er = 1; //此年非閏年
+	        } else { //若本年內有閏月
+	            if (leap != mm) { //但不為輸入的月份
+	                er = 2; //則此輸入的月份非閏月,此月非閏月
+	            } else { //若輸入的月份即為閏月
+	                dy = nofd[mm];
+	            }
+	        }
+	    } else { //若沒有勾選閏月則
+	        if (leap == 0) { //若旗標非閏月,則表示此年不含閏月(包括前一年的11月起之月份)
+	            dy = nofd[mm - 1];
+	        } else { //若旗標為本年有閏月(包括前一年的11月起之月份) 公式nofd(mx - (mx > leap) - 1)的用意為:若指定月大於閏月,則索引用mx,否則索引用mx-1
+	            dy = nofd[mm + (mm > leap) - 1];
+	        }
+	    }
+	    return dy;
+	}
+	/**
+	 * 获取农历某年的闰月,0为无闰月
+	 * @param int yy
+	 * @return number
+	 */
+	this.GetLeap = function(yy){
+	    var lm = GetZQandSMandLunarMonthCode(yy);
+		var jdzq = lm[0];
+		var jdnm = lm[1];
+		var mc = lm[2];
+	    
+	    var leap = 0; //若閏月旗標為0代表無閏月
+	    for (var j = 1; j <= 14; j++) { //確認指定年前一年11月開始各月是否閏月
+	        if (mc[j] - Math.floor(mc[j]) > 0) { //若是,則將此閏月代碼放入閏月旗標內
+	            leap = Math.floor(mc[j] + 0.5); //leap=0對應阴曆11月,1對應阴曆12月,2對應阴曆隔年1月,依此類推.
+	            break;
+	        }
+	    }
+	    return Math.max(0, leap-2);
+	}
+	/**
 	 * 根据公历月日计算星座下标
 	 * @param int mm
 	 * @param int dd
@@ -692,6 +852,173 @@
 	        kn = ((kn + 12) - 1) % 12; //确保是正数
 	    }
 	    return kn;
+	}
+	/**
+	 * 计算公历的某天是星期几(PHP中的date方法,此处演示儒略日历的转换作用)
+	 * @param int yy
+	 * @param int mm
+	 * @param int dd
+	 */
+	this.GetWeek = function(yy, mm, dd){
+		var jd = Solar2Julian(yy, mm, dd, 12);
+	    if(! jd){ //当天12点计算(因为儒略日历是中午12点为起始点)
+	        return false;
+	    }
+
+	    return (((Math.floor(jd+1) % 7)) + 7) % 7; //模數(或餘數)為0代表星期日(因为西元前4713年1月1日12時为星期一).jd加1是因起始日為星期一
+	}
+	/**
+	 * 将农历时间转换成公历时间
+	 * @param int yy
+	 * @param int mm
+	 * @param int dd
+	 * @param int isLeap 是否闰月
+	 * @return false/array(年,月,日)
+	 */
+	this.Lunar2Solar = function(yy, mm, dd, isLeap) {
+	    if (yy < -7000 || yy > 7000) { //超出計算能力
+	        return false;
+	    }
+	    if (yy < -1000 || yy > 3000) { //适用于西元-1000年至西元3000年,超出此范围误差较大
+	        return false;
+	    }
+	    if (mm < 1 || mm > 12){ //輸入月份必須在1-12月之內
+	        return false;
+	    }
+	    if (dd < 1 || dd > 30) { //輸入日期必須在1-30日之內
+	        return false;
+	    }
+	    
+	    var lm = GetZQandSMandLunarMonthCode(yy);
+		var jdzq = lm[0];
+		var jdnm = lm[1];
+		var mc = lm[2];
+
+	    var leap = 0; //若閏月旗標為0代表無閏月
+	    for (var j = 1; j <= 14; j++) { //確認指定年前一年11月開始各月是否閏月
+	        if (mc[j] - Math.floor(mc[j]) > 0) { //若是,則將此閏月代碼放入閏月旗標內
+	            leap = Math.floor(mc[j] + 0.5); //leap=0對應阴曆11月,1對應阴曆12月,2對應阴曆隔年1月,依此類推.
+	            break;
+	        }
+	    }
+	    
+	    mm = mm + 2; //11月對應到1,12月對應到2,1月對應到3,2月對應到4,依此類推
+	    
+		var nofd = [];
+	    for (var i = 0; i <= 14; i++) { //求算阴曆各月之大小,大月30天,小月29天
+	        nofd[i] = Math.floor(jdnm[i + 1] + 0.5) - Math.floor(jdnm[i] + 0.5); //每月天數,加0.5是因JD以正午起算
+	    }
+	    
+	    var jd = 0; //儒略日历时间
+	    var er = 0; //若輸入值有錯誤,er值將被設定為非0
+	    
+	    if (isLeap){ //若是閏月
+	        if (leap < 3) { //而旗標非閏月或非本年閏月,則表示此年不含閏月.leap=0代表無閏月,=1代表閏月為前一年的11月,=2代表閏月為前一年的12月
+	            er = 1; //此年非閏年
+	        } else { //若本年內有閏月
+	            if (leap != mm) { //但不為輸入的月份
+	                er = 2; //則此輸入的月份非閏月,此月非閏月
+	            } else { //若輸入的月份即為閏月
+	                if (dd <= nofd[mm]) { //若輸入的日期不大於當月的天數
+	                    jd = jdnm[mm] + dd - 1; //則將當月之前的JD值加上日期之前的天數
+	                } else { //日期超出範圍
+	                    er = 3;
+	                }
+	            }
+	        }
+	    } else { //若沒有勾選閏月則
+	        if (leap == 0) { //若旗標非閏月,則表示此年不含閏月(包括前一年的11月起之月份)
+	            if (dd <= nofd[mm - 1]) { //若輸入的日期不大於當月的天數
+	                jd = jdnm[mm - 1] + dd - 1; //則將當月之前的JD值加上日期之前的天數
+	            } else { //日期超出範圍
+	                er = 4;
+	            }
+	        } else { //若旗標為本年有閏月(包括前一年的11月起之月份) 公式nofd(mx - (mx > leap) - 1)的用意為:若指定月大於閏月,則索引用mx,否則索引用mx-1
+	            if (dd <= nofd[mm + (mm > leap) - 1]) { //若輸入的日期不大於當月的天數
+	                jd = jdnm[mm + (mm > leap) - 1] + dd - 1; //則將當月之前的JD值加上日期之前的天數
+	            } else { //日期超出範圍
+	                er = 4;
+	            }
+	        }
+	    }
+	    
+	    return er ? false : Julian2Solar(jd).slice(0,3);
+	}
+	/**
+	 * 将公历时间转换成农历时间
+	 * @param int yy
+	 * @param int mm
+	 * @param int dd
+	 * @return array(年,月,日,是否闰月)
+	 */
+	this.Solar2Lunar = function(yy, mm, dd) {
+	    if (! ValidDate(yy, mm, dd)) { //驗證輸入日期的正確性
+	        return [];
+	    }
+	    
+		var mi = 0;
+	    var prev = 0; //是否跨年了,跨年了则减一
+	    var isLeap = 0;//是否闰月
+	    
+	    var lm = GetZQandSMandLunarMonthCode(yy);
+		var jdzq = lm[0];
+		var jdnm = lm[1];
+		var mc = lm[2];
+	    
+	    var jd = Solar2Julian(yy, mm, dd, 12, 0, 0); //求出指定年月日之JD值
+	    if (Math.floor(jd) < Math.floor(jdnm[0] + 0.5)) {
+	        prev = 1;
+	        lm = GetZQandSMandLunarMonthCode(yy-1);
+			jdzq = lm[0];
+			jdnm = lm[1];
+			mc = lm[2];
+	    }
+	    for (var i = 0; i <= 14; i++) { //指令中加0.5是為了改為從0時算起而不從正午算起
+	        if (Math.floor(jd) >= Math.floor(jdnm[i] + 0.5) && Math.floor(jd) < Math.floor(jdnm[i + 1] + 0.5)) {
+	            mi = i;
+	            break;
+	        }
+	    }
+	    
+	    if (mc[mi] < 2 || prev == 1) { //年
+	        yy = yy - 1;
+	    }
+	    
+	    if ((mc[mi] - Math.floor(mc[mi])) * 2 + 1 != 1) { //因mc(mi)=0對應到前一年阴曆11月,mc(mi)=1對應到前一年阴曆12月,mc(mi)=2對應到本年1月,依此類推
+	        isLeap = 1;
+	    }
+	    mm = (Math.floor(mc[mi] + 10) % 12) + 1; //月
+	    
+	    dd = Math.floor(jd) - Math.floor(jdnm[mi] + 0.5) + 1; //日,此處加1是因為每月初一從1開始而非從0開始
+	    
+	    return [yy, mm, dd, isLeap];
+	}
+	/**
+	 * 求出含某公历年立春點開始的24节气的儒略日历时间
+	 * @param int yy
+	 * @return array jq[(k+21)%24]
+	 */
+	this.Get24JieQi = function(yy) {
+	    
+	    var jq = [];
+	    
+	    var dj = GetAdjustedJQ(yy - 1, 21, 23); //求出含指定年立春開始之3個節氣JD值,以前一年的年值代入
+	    for(var k in dj){
+	        if(k < 21){
+	            continue;
+	        }
+	        if(k > 23){
+	            continue;
+	        }
+	        jq.push(Julian2Solar(dj[k])); //21立春;22雨水;23惊蛰
+	    }
+	    
+	    dj = GetAdjustedJQ(yy, 0, 20); //求出指定年節氣之JD值,從春分開始
+	    for(var k in dj){
+	        jq.push(Julian2Solar(dj[k]));
+	    }
+	    
+	    return jq;
 	}
 	/**
 	 * 四柱計算,分早子时晚子时,传公历
@@ -847,7 +1174,7 @@
 	    
 	    return ret;
 	}
-}
+} 
 
 //Year 
 var selectElement = document.getElementById("year")
@@ -889,8 +1216,41 @@ for (let year = 0; year <= 23; year++) {
 }
 selectElement.value = new Date().getHours();
 
+function calculateTenGod(day_tenkan, compare_word) {
+	var main_element = day_tenkan;
+	var other_element = compare_word;
+	var main_wuxin = ""
+	var other_wuxin = ""
+	var main_type = ""
+	var other_type = ""
+	if (水.includes(main_element)) {main_wuxin="水"} if (水.includes(other_element)) {other_wuxin="水"} 
+	if (火.includes(main_element)) {main_wuxin="火"} if (火.includes(other_element)) {other_wuxin="火"} 
+	if (金.includes(main_element)) {main_wuxin="金"} if (金.includes(other_element)) {other_wuxin="金"} 
+	if (木.includes(main_element)) {main_wuxin="木"} if (木.includes(other_element)) {other_wuxin="木"} 
+	if (土.includes(main_element)) {main_wuxin="土"} if (土.includes(other_element)) {other_wuxin="土"} 
+	if (陽.includes(main_element)) {main_type="陽";} if (陽.includes(other_element)) {other_type="陽";} 
+            if (陰.includes(main_element)) {main_type="陰";} if (陰.includes(other_element)) {other_type="陰";} 
+	for (var i = 0; i < wuxin.length; i++) { 
+		if (wuxin[i] == other_wuxin) {
+			var rel_type = dict[main_wuxin][i]  
+			if (rel_type == "我剋者") {
+				if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {return "正財"} else {return "偏財"} 
+			} else if (rel_type == "生我者") { 
+				if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {return "正印"} else {return "偏印"}
+			} else if (rel_type == "我生者") { 
+				if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {return "傷官"} else {return "食神"} 
+			} else if (rel_type == "剋我者") {  
+				if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {return "正官"} else {return "七殺"}
+			} else if (rel_type == "同我者") {
+				if ((main_type == "陽" && other_type == "陰") || (other_type == "陽" && main_type == "陰")) {return "劫財"} else {return "比肩"} 
+			}  
+			break 
+		}
+	}
+}
+
 function calculate() {
-    try {
+    try { 
         var p = new paipan();
         p.zwz = false; //不分早晚子时
         const year = document.getElementById("year").value
@@ -898,6 +1258,7 @@ function calculate() {
         const day = document.getElementById("day").value
         const hour = document.getElementById("hour").value
         var ans = p.GetInfo(0, parseInt(year, 10), parseInt(month, 10), parseInt(day, 10), parseInt(hour, 10), 0, 0);
+		console.log(ans)
         const characters = ans.bazi.split("");  
         
         const bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
@@ -906,10 +1267,80 @@ function calculate() {
             ele.style.color = getWuxinColor(characters[i])
             ele.innerHTML = characters[i]
             ele.style.backgroundColor = getYinYangColor(characters[i])
+
+			// Calculate ten gods 
+			if (bazi_characters[i].includes("deizi")) {
+				const deizi_ten_god_container = document.getElementById(bazi_characters[i] + "_main_ten_god_container") 
+				deizi_ten_god_container.style.backgroundColor = getYinYangColor(characters[i])
+
+				const deizi_main_tenkan_text = document.getElementById(bazi_characters[i] + "_main_tenkan") 
+				const deizi_main_tenkan = deizi_hidden_tenkan[characters[i]][0]
+				deizi_main_tenkan_text.innerHTML = deizi_main_tenkan
+            	deizi_main_tenkan_text.style.color = getWuxinColor(deizi_main_tenkan) 
+
+				const deizi_main_ten_god_text = document.getElementById(bazi_characters[i] + "_main_ten_god") 
+				deizi_main_ten_god_text.innerHTML = calculateTenGod(characters[4], deizi_main_tenkan)
+
+				// <span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span>
+				const deizi_other_ten_god_container = document.getElementById(bazi_characters[i] + "_other_ten_god_container") 
+				deizi_other_ten_god_container.innerHTML = ""
+				if (deizi_hidden_tenkan[characters[i]].length == 1) {
+					var one_word = document.createElement("span")
+					one_word.style.fontSize = "25px" 
+					one_word.style.marginRight = "5px"
+					one_word.style.color = "white"
+					one_word.textContent = "字" 
+					deizi_other_ten_god_container.appendChild(one_word)
+
+					var two_words = document.createElement("span")
+					two_words.style.fontSize = "25px"
+					two_words.style.color = "white"
+					two_words.textContent = "字字" 
+					deizi_other_ten_god_container.appendChild(two_words)
+
+					deizi_other_ten_god_container.style.border = "solid 2px white"
+				} else {
+					deizi_other_ten_god_container.style.border = "solid 2px black"
+					var one_word = document.createElement("span")
+					one_word.style.fontSize = "25px" 
+					one_word.style.marginRight = "5px"
+					one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][1])
+					one_word.textContent = deizi_hidden_tenkan[characters[i]][1]
+					deizi_other_ten_god_container.appendChild(one_word)
+
+					var two_words = document.createElement("span")
+					two_words.style.fontSize = "25px" 
+					two_words.style.color = "black"
+					two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][1])
+					deizi_other_ten_god_container.appendChild(two_words)
+					if (deizi_hidden_tenkan[characters[i]].length == 3) {
+						deizi_other_ten_god_container.appendChild(document.createElement("br")) 
+
+						var one_word = document.createElement("span")
+						one_word.style.fontSize = "25px" 
+						one_word.style.marginRight = "5px"
+						one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][2])
+						one_word.textContent = deizi_hidden_tenkan[characters[i]][2] 
+						deizi_other_ten_god_container.appendChild(one_word)
+
+						var two_words = document.createElement("span")
+						two_words.style.fontSize = "25px" 
+						two_words.style.color = "black"
+						two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][2])
+						deizi_other_ten_god_container.appendChild(two_words)
+					} 
+				} 
+			} else if (bazi_characters[i] != "day_tenkan") {
+				const tenkan_ten_god_text = document.getElementById(bazi_characters[i] + "_ten_god") 
+				tenkan_ten_god_text.style.backgroundColor = getYinYangColor(characters[i])
+				tenkan_ten_god_text.innerHTML = calculateTenGod(characters[4],characters[i]) 
+			}
         }
 
-        document.getElementById("warn").style.display = "none"
+        document.getElementById("warn").style.display = "none" 
     } catch (error) {
+		//Reset 
+
         document.getElementById("warn").style.display = "block"
         const bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
         for (var i=0; i < 8; i++) {
@@ -917,10 +1348,9 @@ function calculate() {
             ele.innerHTML = "字"
             ele.style.color = "gray"
             ele.style.backgroundColor = "white" 
-
         }
     } 
-} 
+}  
 calculate()
 </script> 
 </body>
