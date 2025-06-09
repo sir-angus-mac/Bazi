@@ -5,18 +5,18 @@
     <title>Bazi</title>
 </head>
 <body>
-<select name="year" id="year" onchange="calculate()" style="font-size:25px"> 
+<select name="year" id="year" onchange="calculate()" style="font-size:22px"> 
 </select>
-<span style="font-size: 25px; margin-right: 5px;" >年</span>
-<select name="month" id="month" onchange="calculate()" style="font-size:25px">
+<span style="font-size: 22px; margin-right: 5px;" >年</span>
+<select name="month" id="month" onchange="calculate()" style="font-size:22px">
 </select>
-<span style="font-size: 25px; margin-right: 5px;" >月</span>
-<select name="day" id="day" onchange="calculate()" style="font-size:25px">
+<span style="font-size: 22px; margin-right: 5px;" >月</span>
+<select name="day" id="day" onchange="calculate()" style="font-size:22px">
 </select>
-<span style="font-size: 25px; margin-right: 5px;" >日</span>
-<select name="hour" id="hour" onchange="calculate()" style="font-size:25px">
+<span style="font-size: 22px; margin-right: 5px;" >日</span>
+<select name="hour" id="hour" onchange="calculate()" style="font-size:22px">
 </select>
-<span style="font-size: 25px; margin-right: 5px;" >時</span>  
+<span style="font-size: 22px; margin-right: 5px;" >時</span> 
 
 <br>
 
@@ -27,10 +27,10 @@
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white;" >年</span>
 </div> 
 <div style="display: block;"> 
-    <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan_ten_god">字字</span> 
-	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid white;" >日元</span> 
-	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_tenkan_ten_god">字字</span> 
-	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_tenkan_ten_god">字字</span>  
+    <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="hour_tenkan_ten_god">字字</span> 
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid white; width: 80px" >日元</span> 
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="month_tenkan_ten_god">字字</span> 
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="year_tenkan_ten_god">字字</span>  
 </div>
 <div style="display: block; margin-top: 5px;"> 
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan">字</span>
@@ -60,10 +60,10 @@
 </div> 
 
 <div style="display: flex; margin-top: 10px;"> 
-    <div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="hour_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
-	<div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="day_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
-	<div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
-	<div style="margin-right: 14px; border: 2px solid white; width: fit-content; padding: 2.5px; " id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+    <div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="hour_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="day_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 </div>
 
 <br>
@@ -1301,33 +1301,45 @@ function calculate() {
 					deizi_other_ten_god_container.style.border = "solid 2px white"
 				} else {
 					deizi_other_ten_god_container.style.border = "solid 2px black"
+					var div = document.createElement("div")
+					div.style.width = "80px"
+					div.style.display = "flex"
+					div.style.padding = "2.5px"
+					div.style.backgroundColor = getYinYangColor(deizi_hidden_tenkan[characters[i]][1])
+					
 					var one_word = document.createElement("span")
 					one_word.style.fontSize = "25px" 
-					one_word.style.marginRight = "5px"
+					one_word.style.marginRight = "5px" 
 					one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][1])
 					one_word.textContent = deizi_hidden_tenkan[characters[i]][1]
-					deizi_other_ten_god_container.appendChild(one_word)
+					div.appendChild(one_word)
 
 					var two_words = document.createElement("span")
 					two_words.style.fontSize = "25px" 
 					two_words.style.color = "black"
 					two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][1])
-					deizi_other_ten_god_container.appendChild(two_words)
+					div.appendChild(two_words)
+					deizi_other_ten_god_container.appendChild(div) 
 					if (deizi_hidden_tenkan[characters[i]].length == 3) {
-						deizi_other_ten_god_container.appendChild(document.createElement("br")) 
-
+						var div = document.createElement("div")
+						div.style.width = "80px"
+						div.style.display = "flex"
+						div.style.padding = "2.5px"
+						div.style.backgroundColor = getYinYangColor(deizi_hidden_tenkan[characters[i]][2]) 
+						
 						var one_word = document.createElement("span")
 						one_word.style.fontSize = "25px" 
 						one_word.style.marginRight = "5px"
 						one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][2])
-						one_word.textContent = deizi_hidden_tenkan[characters[i]][2] 
-						deizi_other_ten_god_container.appendChild(one_word)
+						one_word.textContent = deizi_hidden_tenkan[characters[i]][2]
+						div.appendChild(one_word)
 
 						var two_words = document.createElement("span")
 						two_words.style.fontSize = "25px" 
 						two_words.style.color = "black"
 						two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][2])
-						deizi_other_ten_god_container.appendChild(two_words)
+						div.appendChild(two_words)
+						deizi_other_ten_god_container.appendChild(div) 
 					} 
 				} 
 			} else if (bazi_characters[i] != "day_tenkan") {
