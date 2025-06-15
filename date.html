@@ -44,6 +44,11 @@
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_deizi">字</span>
     <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_deizi">字</span> 
 </div> 
+
+<div id = "deizi_tips"> 
+	<!-- <svg width="400px" height="25px"></svg> -->
+</div>
+
 <div style="display: flex; margin-top: 10px;"> 
     <div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="hour_deizi_main_ten_god_container">
 		<span style="font-size: 25px; margin-right: 5px; " id="hour_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
@@ -72,6 +77,8 @@
 
 <script>
     // IMPORTANT Note: Original code by liujiawm on github 
+	var bazi = ""
+
     const 水 = ["水", "壬", "癸", "子", "亥"] 
     const 火 = ["火", "丙", "丁", "午", "巳"]
     const 金 = ["金", "庚", "辛", "申", "酉"] 
@@ -103,6 +110,13 @@
 		"亥" : ["壬", "甲", ],
 		"子" : ["癸"],
 		"丑" : ["己", "癸", "辛"], 
+	}
+
+	const 三合 = {
+		"水" : ["申", "子", "辰"],
+		"金" : ["巳", "酉", "丑"],
+		"火" : ["寅", "午", "戌"],
+		"木" : ["亥", "卯", "未"] 
 	}
 
     function getWuxinColor(data) { 
@@ -1249,7 +1263,168 @@ function calculateTenGod(day_tenkan, compare_word) {
 	}
 }
 
+const w3svg = "http://www.w3.org/2000/svg";
+const deizi_tips = document.getElementById("deizi_tips") 
+
+
+// deizi_tips.innerHTML = ""
+// var svg = document.createElementNS(w3svg, "svg");
+// svg.setAttribute("width", "400px");
+// svg.setAttribute("height", "35px");
+
+// var defs = document.createElementNS(w3svg, "defs");
+// var marker = document.createElementNS(w3svg, "marker");
+// marker.setAttribute("id", "arrow");
+// marker.setAttribute("markerWidth", "5");
+// marker.setAttribute("markerHeight", "5");
+// marker.setAttribute("refX", "2.5");
+// marker.setAttribute("refY", "5");
+
+// var path = document.createElementNS(w3svg, "path");
+// path.setAttribute("d", "M 2.5 0 L 5 5 L 0 5 z");
+// path.setAttribute("fill", "black");
+
+// marker.append(path)
+// defs.append(marker)
+// svg.append(defs) 
+
+// var polyline = document.createElementNS(w3svg, "polyline");
+// polyline.setAttribute("points", "45,20 45,35");
+// polyline.setAttribute("stroke", "black");
+// polyline.setAttribute("stroke-width", "2");
+// polyline.setAttribute("fill", "none");
+// polyline.setAttribute("marker-start", "url(#arrow)");
+
+// svg.append(polyline)
+
+// var polyline = document.createElementNS(w3svg, "polyline");
+// polyline.setAttribute("points", "145,20 145,35");
+// polyline.setAttribute("stroke", "black");
+// polyline.setAttribute("stroke-width", "2");
+// polyline.setAttribute("fill", "none");
+// polyline.setAttribute("marker-start", "url(#arrow)");
+// svg.append(polyline)
+
+// deizi_tips.append(svg)
+
+// var text = document.createElement("h5")
+// text.style.textAlign = "center"
+// text.innerHTML = "字字字字"
+// text.style.fontSize = "20px"
+// text.style.width = "400px"
+// text.style.margin = "0px"
+
+// deizi_tips.append(text)
+
+function three_rendezvous() {
+	deizi_tips.innerHTML = ""
+	var BAZI = bazi.split("")
+	var found = []
+	for (let key in 三合) {
+		var found_poses = []
+		var found_chars = [] //make sure char doesnt repeat
+		for (let i = 0; i < 8; i++) {
+			var char = bazi.split("")[i]
+			if (三合[key].includes(char) && !found_chars.includes(char)) {
+				found_poses.push(4-((i+1)/2))  
+				found_chars.push(char)
+			}		
+		}
+		if (found_poses.length == 3) {
+			found.push({type: "三合", element: key, poses: found_poses, chars: found_chars})
+		} else if (found_poses.length == 2) {
+			found.push({type: "半合", element: key, poses: found_poses, chars: found_chars})
+		} 
+	}
+	
+	if (found.length > 0 ) { 
+		//console.log(found)
+		
+		for (var f of found) {
+			// Graph color
+			var graph_color = getWuxinColor(f.element);
+			var arrow_tag = "arrow_" + f.element
+
+			//Setup
+			var svg = document.createElementNS(w3svg, "svg");
+			svg.setAttribute("width", "400px");
+			svg.setAttribute("height", "35px");
+			var defs = document.createElementNS(w3svg, "defs");
+			var marker = document.createElementNS(w3svg, "marker");
+			marker.setAttribute("id", arrow_tag);
+			marker.setAttribute("markerWidth", "5");
+			marker.setAttribute("markerHeight", "5");
+			marker.setAttribute("refX", "2.5");
+			marker.setAttribute("refY", "5");
+			var path = document.createElementNS(w3svg, "path");
+			path.setAttribute("d", "M 2.5 0 L 5 5 L 0 5 z");
+			path.setAttribute("fill", graph_color);
+			marker.append(path)
+			defs.append(marker)
+			svg.append(defs) 
+
+			//Place arrows 
+			var true_poses = [] 
+			for (var p of f.poses) {  
+				var true_pos = p*102+45
+				true_poses.push(true_pos)
+				var polyline = document.createElementNS(w3svg, "polyline");
+				polyline.setAttribute("points", (true_pos).toString() + ",20 " + (true_pos).toString() + ",35");
+				polyline.setAttribute("stroke", graph_color);
+				polyline.setAttribute("stroke-width", "2");
+				polyline.setAttribute("fill", "none");
+				polyline.setAttribute("marker-start", "url(#" + arrow_tag + ")");
+				svg.append(polyline)
+			} 
+
+			//Place horizontal line 
+			var h_line = document.createElementNS(w3svg, "polyline");
+			h_line.setAttribute("points", (Math.min(...true_poses)).toString() + ",34 " + (Math.max(...true_poses)).toString() + ",34");
+			h_line.setAttribute("stroke", graph_color); 
+			h_line.setAttribute("stroke-width", "2");
+			h_line.setAttribute("fill", "none");
+			svg.append(h_line)
+
+			// Graph Add! 
+			deizi_tips.append(svg)
+
+			//Place text (tip)  
+			var text = document.createElement("h5")
+			text.innerHTML = f.chars.join("") + f.type + "：" + f.element + "局"
+			text.style.fontSize = "20px"
+			text.style.color = graph_color 
+			text.style.margin = "0px"
+			
+			var min_row = Math.min(...f.poses)
+			var max_row = Math.max(...f.poses)
+			if (max_row - min_row == 3) {
+				text.style.textAlign = "center"
+				text.style.width = "400px"
+			} else if (max_row - min_row == 2) {
+				text.style.textAlign = "center"
+				text.style.width = "300px"
+				if (min_row > 0) {
+					text.style.marginLeft = "100px"
+				}
+			} else {
+				text.style.textAlign = "center"
+				text.style.width = "200px"
+				if (min_row == 1) {
+					text.style.marginLeft = "100px"
+				} else if (min_row == 2) {
+					text.style.marginLeft = "200px"
+				} 
+			}
+			deizi_tips.append(text)
+		}
+	} 
+} 
+
+
 function calculate() {
+	// Reset deizi tips
+	deizi_tips.innerHTML = ""
+
     try { 
         var p = new paipan();
         p.zwz = false; //不分早晚子时
@@ -1258,8 +1433,9 @@ function calculate() {
         const day = document.getElementById("day").value
         const hour = document.getElementById("hour").value
         var ans = p.GetInfo(0, parseInt(year, 10), parseInt(month, 10), parseInt(day, 10), parseInt(hour, 10), 0, 0);
-		console.log(ans)
+		// ***BAZI INFO: console.log(ans)
         const characters = ans.bazi.split("");  
+		bazi = ans.bazi;
         
         const bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
         for (var i=0; i < 8; i++) {
@@ -1350,8 +1526,11 @@ function calculate() {
         }
 
         document.getElementById("warn").style.display = "none" 
+
+		three_rendezvous()
     } catch (error) {
 		//Reset 
+		console.log(error) 
 
         document.getElementById("warn").style.display = "block"
         const bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
@@ -1363,7 +1542,8 @@ function calculate() {
         }
     } 
 }  
-calculate()
+
+calculate() 
 </script> 
 </body>
 </html>
