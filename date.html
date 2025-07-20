@@ -33,13 +33,13 @@
 	</div>
 </div>
 
-<div style="display: block;"> 
-    <span style="font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid white;" >時</span> 
-    <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white;" >日</span>
-    <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white;" >月</span>
-    <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white;" >年</span>
+<div style="display: flex;"> 
+    <span style="font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >時</span> 
+    <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >日</span>
+    <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >月</span>
+    <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >年</span>
 </div> 
-<div style="display: block;"> 
+<div style="display: flex;"> 
     <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="hour_tenkan_ten_god">字字</span> 
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid white; width: 80px" >日元</span> 
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="month_tenkan_ten_god">字字</span> 
@@ -48,46 +48,46 @@
 
 
 
-<div style="display: block; margin-top: 5px;"> 
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 3px; border: 4px solid rgb(55, 55, 55); border-style: dashed;" id="day_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
+<div style="display: flex; margin-top: 5px;"> 
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="hour_tenkan" draggable="true" ondragstart="dragpoint(event)">字</div>
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid rgb(55, 55, 55); border-style: dashed; width: 80px" id="day_tenkan" draggable="true" ondragstart="dragpoint(event)">字</div>
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="month_tenkan" draggable="true" ondragstart="dragpoint(event)">字</div>
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="year_tenkan" draggable="true" ondragstart="dragpoint(event)">字</div>
 </div>   
-<div style="display: block;"> 
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="day_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span> 
+<div style="display: flex; margin-top: 5px;"> 
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="hour_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div>
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="day_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div>
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="month_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div>
+    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="year_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div> 
 </div>  
 
 <div style="display: flex; margin-top: 10px;"> 
-    <div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="hour_self_sit">字字</div> 
-	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="day_self_sit">字字</div> 
-	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="month_self_sit">字字</div> 
-	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="year_self_sit">字字</div>  
+    <div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="hour_self_sit">字字</div> 
+	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="day_self_sit">字字</div> 
+	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="month_self_sit">字字</div> 
+	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="year_self_sit">字字</div>  
 </div>   
 
 <div style="display: flex; margin-top: 10px;"> 
-    <div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="hour_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="hour_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
+    <div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="hour_deizi_main_ten_god_container">
+		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="hour_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
+	</div>  
+	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="day_deizi_main_ten_god_container">
+		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="day_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
 	</div> 
-	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="day_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="day_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
+	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="month_deizi_main_ten_god_container">
+		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="month_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
 	</div> 
-	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="month_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="month_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
-	</div> 
-	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="year_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="year_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
+	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="year_deizi_main_ten_god_container">
+		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="year_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
 	</div> 
 </div> 
 
 <div style="display: flex; margin-top: 10px;"> 
-    <div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="hour_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
-	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="day_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
-	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
-	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+    <div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="hour_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="day_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 </div>
 
 <br>
@@ -1689,12 +1689,13 @@ function calculate() {
 				} else {
 					deizi_other_ten_god_container.style.border = "solid 2px black"
 					var div = document.createElement("div")
-					div.style.width = "80px"
+					div.style.width = "90px"
 					div.style.display = "flex"
-					div.style.padding = "2.5px"
 					div.style.backgroundColor = getYinYangColor(deizi_hidden_tenkan[characters[i]][1])
 					
-					var one_word = document.createElement("span")
+					var one_word = document.createElement("button")
+					one_word.style.backgroundColor = "transparent"
+					one_word.style.border = "none"
 					one_word.style.fontSize = "25px" 
 					one_word.style.marginRight = "5px" 
 					one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][1])
@@ -1703,7 +1704,9 @@ function calculate() {
 					one_word.ondragstart= function(event) {dragpoint(event)}
 					div.appendChild(one_word)
 
-					var two_words = document.createElement("span")
+					var two_words = document.createElement("button")
+					two_words.style.backgroundColor = "transparent"
+					two_words.style.border = "none"
 					two_words.style.fontSize = "25px" 
 					two_words.style.color = "black"
 					two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][1])
@@ -1711,13 +1714,14 @@ function calculate() {
 					deizi_other_ten_god_container.appendChild(div) 
 					if (deizi_hidden_tenkan[characters[i]].length == 3) {
 						var div = document.createElement("div")
-						div.style.width = "80px"
+						div.style.width = "90px"
 						div.style.display = "flex"
-						div.style.padding = "2.5px"
 						div.style.backgroundColor = getYinYangColor(deizi_hidden_tenkan[characters[i]][2]) 
 						
-						var one_word = document.createElement("span")
+						var one_word = document.createElement("button")
 						one_word.style.fontSize = "25px" 
+						one_word.style.backgroundColor = "transparent"
+						one_word.style.border = "none"
 						one_word.style.marginRight = "5px"
 						one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][2])
 						one_word.textContent = deizi_hidden_tenkan[characters[i]][2]
@@ -1725,7 +1729,9 @@ function calculate() {
 						one_word.ondragstart= function(event) {dragpoint(event)}
 						div.appendChild(one_word)
 
-						var two_words = document.createElement("span")
+						var two_words = document.createElement("button")
+						two_words.style.backgroundColor = "transparent"
+						two_words.style.border = "none"
 						two_words.style.fontSize = "25px" 
 						two_words.style.color = "black"
 						two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][2])
