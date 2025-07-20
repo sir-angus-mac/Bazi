@@ -18,7 +18,20 @@
 </select>
 <span style="font-size: 22px; margin-right: 5px;" >時</span> 
 
-<br>
+<div>
+	<br>
+	<div style="width: 400px; height: 100px; background-color: rgb(235, 235, 235); border: dashed 2px black; display: none" id="hint">
+		<button style="font-size: 20px; border: none; border-radius: 95%;" onclick="document.getElementById('hint').style.display = 'none' ">✖</button>
+		<div style="margin-right: auto; margin-left: auto; width: fit-content; margin-bottom: 0px; font-size: 30px; " id="month_deizi_main_ten_god_container">
+			<span id="text_2">字</span>
+			(
+			<span id="text_info">字字</span> 
+			)
+			＝
+			<span style="margin-right: 5px; " id="text_1">字</span> 
+		</div> 
+	</div>
+</div>
 
 <div style="display: block;"> 
     <span style="font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid white;" >時</span> 
@@ -32,35 +45,41 @@
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="month_tenkan_ten_god">字字</span> 
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="year_tenkan_ten_god">字字</span>  
 </div>
-<div style="display: block; margin-top: 5px;"> 
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 3px; border: 4px solid rgb(55, 55, 55); border-style: dashed;" id="day_tenkan">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_tenkan">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_tenkan">字</span>
-</div>  
-<div style="display: block;"> 
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_deizi">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="day_deizi">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_deizi">字</span>
-    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_deizi">字</span> 
-</div> 
 
-<div id = "deizi_tips"> 
-	<!-- <svg width="400px" height="25px"></svg> -->
-</div>
+
+
+<div style="display: block; margin-top: 5px;"> 
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 3px; border: 4px solid rgb(55, 55, 55); border-style: dashed;" id="day_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span>
+</div>   
+<div style="display: block;"> 
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="hour_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="day_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="month_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span>
+    <span style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;" id="year_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</span> 
+</div>  
+
+<div style="display: flex; margin-top: 10px;"> 
+    <div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="hour_self_sit">字字</div> 
+	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="day_self_sit">字字</div> 
+	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="month_self_sit">字字</div> 
+	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 75px; margin-right: 14px; height:45px; display: flex; align-items: center; justify-content: center" id="year_self_sit">字字</div>  
+</div>   
 
 <div style="display: flex; margin-top: 10px;"> 
     <div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="hour_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="hour_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
+		<span style="font-size: 25px; margin-right: 5px; " id="hour_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
 	</div> 
 	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="day_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="day_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
+		<span style="font-size: 25px; margin-right: 5px; " id="day_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
 	</div> 
 	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="month_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="month_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
+		<span style="font-size: 25px; margin-right: 5px; " id="month_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
 	</div> 
 	<div style="margin-right: 14px; border: 2px solid black; width: fit-content; padding: 2.5px; " id="year_deizi_main_ten_god_container">
-		<span style="font-size: 25px; margin-right: 5px; " id="year_deizi_main_tenkan">字</span><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
+		<span style="font-size: 25px; margin-right: 5px; " id="year_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</span><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
 	</div> 
 </div> 
 
@@ -70,6 +89,16 @@
 	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 	<div style="margin-right: 14px; border: 2px solid white; width: 85px; height: fit-content" id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 </div>
+
+<br>
+
+<div id = "deizi_tips" style="display: none; border: 2px dashed black; width: fit-content; background-color: aliceblue;">  
+	<!-- <svg width="400px" height="25px"></svg> -->
+</div>
+
+<br>
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="deizi_tip_button" onclick="deizi_tip_toggle()">地支提示</button>
 
 <br>
 
@@ -119,6 +148,122 @@
 		"木" : ["亥", "卯", "未"] 
 	}
 
+	const 三會 = {
+		"水" : ["亥", "子", "丑"],
+		"金" : ["申", "酉", "戌"],
+		"火" : ["巳", "午", "未"],
+		"木" : ["寅", "卯", "辰"] 
+	}
+
+	const 三刑 = {
+		"無恩之刑" : ["未", "戌", "丑"],
+		"恃勢之刑" : ["申", "寅", "巳"],
+		"無禮之刑" : ["子", "卯"], 
+		"自刑" : ["辰", "午", "酉", "亥"] 
+	}
+
+	const six_rel = {
+		"合": 
+		{ 
+			"土": ["子", "丑"],
+			"木": ["亥", "寅"],
+			"火": ["戌", "卯"],
+			"金": ["酉", "辰"],
+			"水": ["申", "巳"],
+			"火": ["未", "午"],
+		}, 
+		"相沖": 
+		{ 
+			"一": ["子", "午"],
+			"二": ["丑", "未"],
+			"三": ["寅", "申"],
+			"四": ["卯", "酉"],
+			"五": ["辰", "戌"],
+			"六": ["巳", "亥"], 
+		} 
+		, 
+		"相害": 
+		{ 
+			"1": ["辰", "卯"],
+			"2": ["巳", "寅"],
+			"3": ["午", "丑"],
+			"4": ["子", "未"],
+			"5": ["申", "亥"],
+			"6": ["酉", "戌"], 
+		} 
+		, 
+		"相破": 
+		{ 
+			"1": ["巳", "申"],
+			"2": ["午", "卯"],
+			"3": ["未", "戌"],
+			"4": ["子", "酉"],
+			"5": ["辰", "丑"],
+			"6": ["寅", "亥"], 
+		} 
+	}
+
+	const tenkan_order = [
+		"甲",
+		"乙",
+		"丙",
+		"丁",
+		"戊",
+		"己", 
+		"庚",
+		"辛",
+		"壬", 
+		"癸",
+	]
+
+	const deizi_order = [
+		"寅",
+		"卯",
+		"辰",
+		"巳",
+		"午",
+		"未", 
+		"申",
+		"酉",
+		"戌", 
+		"亥",
+		"子",
+		"丑", 
+	]
+
+	const tenkan_deizi_rel = {
+		"甲": ["臨官","帝旺","衰","病","死","墓庫","絕","胎","養","長生","沐浴","冠帶"], 
+		"乙": ["帝旺","臨官","冠帶","沐浴","長生","養","胎","絕","墓庫","死","病","衰"],  
+		"丙": ["長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養"],
+		"丁": ["死","病","衰","帝旺","臨官","冠帶","沐浴","長生","養","胎","絕","墓庫"], 
+		"戊": ["長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養"],
+		"己": ["死","病","衰","帝旺","臨官","冠帶","沐浴","長生","養","胎","絕","墓庫"], 
+		"庚": ["絕","胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫"],
+		"辛": ["胎","絕","墓庫","死","病","衰","帝旺","臨官","冠帶","沐浴","長生","養"], 
+		"壬": ["病","死","墓庫","絕","胎","養","長生","沐浴","冠帶","臨官","帝旺","衰"],
+		"癸": ["沐浴","長生","養","胎","絕","墓庫","死","病","衰","帝旺","臨官","冠帶"], 
+	}
+	
+	function longevity_calculate(tenkan, deizi) {
+		return tenkan_deizi_rel[tenkan][deizi_order.indexOf(deizi)];
+	}  
+
+	function longevity_color(longevity_text) {
+		if (["長生","沐浴","冠帶"].includes(longevity_text)) {
+			return "#008000";
+		} else if (["臨官","帝旺","衰"].includes(longevity_text)) {
+			return "red";
+		} else if (["病","死","墓庫"].includes(longevity_text)) {
+			return "blue";
+		} else if (["絕","胎","養"].includes(longevity_text)) {
+			return "gray"; 
+		} else {
+			return "black";
+		}
+	}
+
+	console.log(longevity_calculate("甲", "寅"))  
+
     function getWuxinColor(data) { 
         if (水.includes(data)) {
             return "blue"
@@ -130,7 +275,11 @@
             return "green"
         } else if (土.includes(data)) {  
             return "rgb(134, 93, 9)" 
-        } 
+        } else if (["1","2","3","4","5","6"].includes(data)) {
+			return "grey" 
+		} else {
+			return "black"
+		}
     }
 
     function getYinYangColor(data) { 
@@ -140,6 +289,29 @@
             return "white" 
         } 
     }
+
+	var drag_text = "";
+
+	function dragpoint(event) {
+        drag_text = event.target.innerHTML; 
+    }  
+
+	function droppoint(event) {
+		var drop_text = event.target.innerHTML; 
+		document.getElementById("hint").style.display = "block"; 
+		if (tenkan_order.includes(drag_text) && deizi_order.includes(drop_text)) {
+			document.getElementById("text_1").innerHTML = drop_text; 
+			document.getElementById("text_1").style.color = getWuxinColor(drop_text); 
+			document.getElementById("text_2").innerHTML = drag_text; 
+			document.getElementById("text_2").style.color = getWuxinColor(drag_text); 
+			var longevity = longevity_calculate(drag_text, drop_text); 
+			document.getElementById("text_info").innerHTML = longevity;  
+			document.getElementById("text_info").style.color = longevity_color(longevity); 
+		}
+
+		//reset
+		drag_text = "";
+	}
 
     /**
  * @author szargv@wo.cn
@@ -1266,80 +1438,9 @@ function calculateTenGod(day_tenkan, compare_word) {
 const w3svg = "http://www.w3.org/2000/svg";
 const deizi_tips = document.getElementById("deizi_tips") 
 
-
-// deizi_tips.innerHTML = ""
-// var svg = document.createElementNS(w3svg, "svg");
-// svg.setAttribute("width", "400px");
-// svg.setAttribute("height", "35px");
-
-// var defs = document.createElementNS(w3svg, "defs");
-// var marker = document.createElementNS(w3svg, "marker");
-// marker.setAttribute("id", "arrow");
-// marker.setAttribute("markerWidth", "5");
-// marker.setAttribute("markerHeight", "5");
-// marker.setAttribute("refX", "2.5");
-// marker.setAttribute("refY", "5");
-
-// var path = document.createElementNS(w3svg, "path");
-// path.setAttribute("d", "M 2.5 0 L 5 5 L 0 5 z");
-// path.setAttribute("fill", "black");
-
-// marker.append(path)
-// defs.append(marker)
-// svg.append(defs) 
-
-// var polyline = document.createElementNS(w3svg, "polyline");
-// polyline.setAttribute("points", "45,20 45,35");
-// polyline.setAttribute("stroke", "black");
-// polyline.setAttribute("stroke-width", "2");
-// polyline.setAttribute("fill", "none");
-// polyline.setAttribute("marker-start", "url(#arrow)");
-
-// svg.append(polyline)
-
-// var polyline = document.createElementNS(w3svg, "polyline");
-// polyline.setAttribute("points", "145,20 145,35");
-// polyline.setAttribute("stroke", "black");
-// polyline.setAttribute("stroke-width", "2");
-// polyline.setAttribute("fill", "none");
-// polyline.setAttribute("marker-start", "url(#arrow)");
-// svg.append(polyline)
-
-// deizi_tips.append(svg)
-
-// var text = document.createElement("h5")
-// text.style.textAlign = "center"
-// text.innerHTML = "字字字字"
-// text.style.fontSize = "20px"
-// text.style.width = "400px"
-// text.style.margin = "0px"
-
-// deizi_tips.append(text)
-
-function three_rendezvous() {
-	deizi_tips.innerHTML = ""
-	var BAZI = bazi.split("")
-	var found = []
-	for (let key in 三合) {
-		var found_poses = []
-		var found_chars = [] //make sure char doesnt repeat
-		for (let i = 0; i < 8; i++) {
-			var char = bazi.split("")[i]
-			if (三合[key].includes(char) && !found_chars.includes(char)) {
-				found_poses.push(4-((i+1)/2))  
-				found_chars.push(char)
-			}		
-		}
-		if (found_poses.length == 3) {
-			found.push({type: "三合", element: key, poses: found_poses, chars: found_chars})
-		} else if (found_poses.length == 2) {
-			found.push({type: "半合", element: key, poses: found_poses, chars: found_chars})
-		} 
-	}
-	
+function find(found) { 
 	if (found.length > 0 ) { 
 		//console.log(found)
-		
 		for (var f of found) {
 			// Graph color
 			var graph_color = getWuxinColor(f.element);
@@ -1386,11 +1487,21 @@ function three_rendezvous() {
 			svg.append(h_line)
 
 			// Graph Add! 
-			deizi_tips.append(svg)
+			deizi_tips.append(svg) 
 
-			//Place text (tip)  
+			//Place text (tip) 
 			var text = document.createElement("h5")
-			text.innerHTML = f.chars.join("") + f.type + "：" + f.element + "局"
+			text.innerHTML = f.chars.join("") + f.type  
+			if ( f.element != "" && !["1","2","3","4","5","6"].includes(f.element) && !["一","二","三","四","五","六"].includes(f.element)) {
+				text.innerHTML += "：" 
+				if (f.type == "合") {
+					text.innerHTML +=  "化" + f.element 
+				} else if ( f.type.includes("合") || f.type.includes("會")) { 
+					text.innerHTML += f.element + "局" 
+				} else {
+					text.innerHTML += f.element
+				}
+			}  
 			text.style.fontSize = "20px"
 			text.style.color = graph_color 
 			text.style.margin = "0px"
@@ -1418,7 +1529,106 @@ function three_rendezvous() {
 			deizi_tips.append(text)
 		}
 	} 
+}
+
+function three_rendezvous() {
+	var BAZI = bazi.split("")
+	var found = []
+	for (let key in 三合) {
+		var found_poses = []
+		var found_chars = [] //make sure char doesnt repeat
+		for (let i = 0; i < 8; i++) {
+			var char = bazi.split("")[i]
+			if (三合[key].includes(char) && !found_chars.includes(char)) {
+				found_poses.push(4-((i+1)/2))  
+				found_chars.push(char)
+			}		
+		}
+		if (found_poses.length == 3) {
+			found.push({type: "三合", element: key, poses: found_poses, chars: found_chars})
+		} else if (found_poses.length == 2) {
+			found.push({type: "半合", element: key, poses: found_poses, chars: found_chars})
+		} 
+	}
+	
+	find(found);
 } 
+
+function three_punishments() {
+	var BAZI = bazi.split("")
+	var found = []
+	for (let key in 三刑) {
+		var found_poses = []
+		var found_chars = [] 
+		for (let i = 0; i < 8; i++) {
+			var char = bazi.split("")[i]
+			if (三刑[key].includes(char) && (!found_chars.includes(char) || key == "自刑" )) { 
+				found_poses.push(4-((i+1)/2))  
+				found_chars.push(char)
+			} 
+		} 
+
+		if (found_poses.length == 3) {
+			found.push({type: "三刑", element: key, poses: found_poses, chars: found_chars})
+		} else if (found_poses.length == 2) {
+			if (found_chars[0] == found_chars[1]) {
+				found.push({type: "自刑", element: "", poses: found_poses, chars: found_chars})
+			} else { 
+				found.push({type: "相刑", element: key, poses: found_poses, chars: found_chars})
+			}
+		} 
+	}
+	
+	find(found);
+} 
+
+function four_seasons() {
+	var BAZI = bazi.split("")
+	var found = []
+	for (let key in 三會) {
+		var found_poses = []
+		var found_chars = [] //make sure char doesnt repeat
+		for (let i = 0; i < 8; i++) {
+			var char = bazi.split("")[i]
+			if (三會[key].includes(char) && !found_chars.includes(char)) {
+				found_poses.push(4-((i+1)/2))  
+				found_chars.push(char)
+			}		
+		}
+		if (found_poses.length == 3) {
+			found.push({type: "三會", element: key, poses: found_poses, chars: found_chars})
+		} else if (found_poses.length == 2) {
+			found.push({type: "半會", element: key, poses: found_poses, chars: found_chars})
+		} 
+	} 
+	
+	find(found);
+} 
+
+function six_relationships() {
+	var BAZI = bazi.split("")
+	var found = []
+
+	for (let kw in six_rel) {
+		var list = six_rel[kw];
+		for (let key in list) {
+			var found_poses = []
+			var found_chars = [] //make sure char doesnt repeat
+			for (let i = 0; i < 8; i++) {
+				var char = bazi.split("")[i]
+				if (list[key].includes(char) && !found_chars.includes(char)) {
+					found_poses.push(4-((i+1)/2))  
+					found_chars.push(char)
+				} 
+			} 
+			if (found_poses.length == 2) {
+				found.push({type: kw, element: key, poses: found_poses, chars: found_chars})
+			} 
+		}
+	}
+
+	find(found);
+}
 
 
 function calculate() {
@@ -1433,7 +1643,8 @@ function calculate() {
         const day = document.getElementById("day").value
         const hour = document.getElementById("hour").value
         var ans = p.GetInfo(0, parseInt(year, 10), parseInt(month, 10), parseInt(day, 10), parseInt(hour, 10), 0, 0);
-		// ***BAZI INFO: console.log(ans)
+		// ***BAZI INFO: 
+		console.log(ans)
         const characters = ans.bazi.split("");  
 		bazi = ans.bazi;
         
@@ -1488,6 +1699,8 @@ function calculate() {
 					one_word.style.marginRight = "5px" 
 					one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][1])
 					one_word.textContent = deizi_hidden_tenkan[characters[i]][1]
+					one_word.draggable=true 
+					one_word.ondragstart= function(event) {dragpoint(event)}
 					div.appendChild(one_word)
 
 					var two_words = document.createElement("span")
@@ -1508,6 +1721,8 @@ function calculate() {
 						one_word.style.marginRight = "5px"
 						one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][2])
 						one_word.textContent = deizi_hidden_tenkan[characters[i]][2]
+						one_word.draggable=true 
+						one_word.ondragstart= function(event) {dragpoint(event)}
 						div.appendChild(one_word)
 
 						var two_words = document.createElement("span")
@@ -1525,9 +1740,18 @@ function calculate() {
 			}
         }
 
+		//calculate longevity
+		for (const stem of ["hour", "day", "month", "year"]) {
+			document.getElementById(stem+"_self_sit").innerHTML = longevity_calculate(document.getElementById(stem+"_tenkan").innerHTML, document.getElementById(stem+"_deizi").innerHTML)
+		} 
+
         document.getElementById("warn").style.display = "none" 
 
-		three_rendezvous()
+		deizi_tips.innerHTML = "";
+		three_rendezvous();
+		four_seasons();
+		three_punishments();
+		six_relationships(); 
     } catch (error) {
 		//Reset 
 		console.log(error) 
@@ -1544,6 +1768,21 @@ function calculate() {
 }  
 
 calculate() 
+
+var deizi_tip_on = false
+function deizi_tip_toggle() {
+	if (!deizi_tip_on) {
+		deizi_tip_on = true
+		document.getElementById("deizi_tips").style.display = "block"
+		document.getElementById("deizi_tip_button").style.border = "2px dashed black" 
+		document.getElementById("deizi_tip_button").style.color = "gray" 
+	} else {
+		deizi_tip_on = false
+		document.getElementById("deizi_tips").style.display = "none"
+		document.getElementById("deizi_tip_button").style.border = "2px solid black" 
+		document.getElementById("deizi_tip_button").style.color = "black"  
+	}
+}
 </script> 
 </body>
 </html>
