@@ -1445,7 +1445,7 @@ function find(found) {
 
 			//Setup
 			var svg = document.createElementNS(w3svg, "svg");
-			svg.setAttribute("width", "400px");
+			svg.setAttribute("width", "500px");
 			svg.setAttribute("height", "35px");
 			var defs = document.createElementNS(w3svg, "defs");
 			var marker = document.createElementNS(w3svg, "marker");
@@ -1505,7 +1505,10 @@ function find(found) {
 			
 			var min_row = Math.min(...f.poses)
 			var max_row = Math.max(...f.poses)
-			if (max_row - min_row == 3) {
+			if (max_row - min_row == 4) {
+				text.style.textAlign = "center"
+				text.style.width = "500px"
+			} else if (max_row - min_row == 3) {
 				text.style.textAlign = "center"
 				text.style.width = "400px"
 			} else if (max_row - min_row == 2) {
@@ -1521,7 +1524,9 @@ function find(found) {
 					text.style.marginLeft = "100px"
 				} else if (min_row == 2) {
 					text.style.marginLeft = "200px"
-				} 
+				} else if (min_row == 3) {
+					text.style.marginLeft = "300px"
+				}
 			}
 			deizi_tips.append(text)
 		}
@@ -1534,10 +1539,10 @@ function three_rendezvous() {
 	for (let key in 三合) {
 		var found_poses = []
 		var found_chars = [] //make sure char doesnt repeat
-		for (let i = 0; i < 8; i++) {
+		for (let i = 0; i < bazi.length; i++) {
 			var char = bazi.split("")[i]
 			if (三合[key].includes(char) && !found_chars.includes(char)) {
-				found_poses.push(4-((i+1)/2))  
+				found_poses.push((bazi.length/2)-((i+1)/2))  
 				found_chars.push(char)
 			}		
 		}
@@ -1557,10 +1562,10 @@ function three_punishments() {
 	for (let key in 三刑) {
 		var found_poses = []
 		var found_chars = [] 
-		for (let i = 0; i < 8; i++) {
+		for (let i = 0; i < bazi.length; i++) {
 			var char = bazi.split("")[i]
 			if (三刑[key].includes(char) && (!found_chars.includes(char) || key == "自刑" )) { 
-				found_poses.push(4-((i+1)/2))  
+				found_poses.push((bazi.length/2)-((i+1)/2))  
 				found_chars.push(char)
 			} 
 		} 
@@ -1585,10 +1590,10 @@ function four_seasons() {
 	for (let key in 三會) {
 		var found_poses = []
 		var found_chars = [] //make sure char doesnt repeat
-		for (let i = 0; i < 8; i++) {
+		for (let i = 0; i < bazi.length; i++) {
 			var char = bazi.split("")[i]
 			if (三會[key].includes(char) && !found_chars.includes(char)) {
-				found_poses.push(4-((i+1)/2))  
+				found_poses.push((bazi.length/2)-((i+1)/2))  
 				found_chars.push(char)
 			}		
 		}
@@ -1611,10 +1616,10 @@ function six_relationships() {
 		for (let key in list) {
 			var found_poses = []
 			var found_chars = [] //make sure char doesnt repeat
-			for (let i = 0; i < 8; i++) {
+			for (let i = 0; i < bazi.length; i++) {
 				var char = bazi.split("")[i]
 				if (list[key].includes(char) && !found_chars.includes(char)) {
-					found_poses.push(4-((i+1)/2))  
+					found_poses.push((bazi.length/2)-((i+1)/2))  
 					found_chars.push(char)
 				} 
 			} 
