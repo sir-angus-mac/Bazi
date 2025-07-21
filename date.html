@@ -4,6 +4,12 @@
 <head>
     <title>Bazi</title>
 </head>
+<style>
+	button:active {
+		background: rgb(36, 174, 96);
+		transform: translateY(4px);
+	}
+</style>
 <body>
 <select name="year" id="year" onchange="calculate()" style="font-size:22px"> 
 </select>
@@ -49,16 +55,16 @@
 
 
 <div style="display: flex; margin-top: 5px;"> 
-    <button style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; -webkit-user-select: none" id="hour_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button>
-    <button style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid rgb(55, 55, 55); border-style: dashed; width: 94px;  -webkit-user-select: none" id="day_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button>
-    <button style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px;  -webkit-user-select: none" id="month_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button>
-    <button style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px;  -webkit-user-select: none" id="year_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button>
-</div>   
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px;" id="hour_tenkan">字</button> 
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid rgb(55, 55, 55); border-style: dashed; width: 94px; " id="day_tenkan">字</button>
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="month_tenkan">字</button>
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="year_tenkan">字</button>
+</div>    
 <div style="display: flex; margin-top: 5px;"> 
-    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="hour_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div>
-    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="day_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div>
-    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="month_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div>
-    <div style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black;width: 80px" id="year_deizi" ondragover="event.preventDefault()" ondrop="droppoint(event)">字</div> 
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="hour_deizi">字</button>
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="day_deizi">字</button>
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="month_deizi">字</button>
+    <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="year_deizi">字</button> 
 </div>  
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -70,16 +76,16 @@
 
 <div style="display: flex; margin-top: 10px;"> 
     <div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="hour_deizi_main_ten_god_container">
-		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="hour_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
+		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="hour_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="hour_deizi_main_ten_god">字字</span> 
 	</div>  
 	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="day_deizi_main_ten_god_container">
-		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="day_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
+		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="day_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="day_deizi_main_ten_god">字字</span>
 	</div> 
 	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="month_deizi_main_ten_god_container">
-		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="month_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
+		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="month_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="month_deizi_main_ten_god">字字</span>
 	</div> 
 	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="year_deizi_main_ten_god_container">
-		<button style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="year_deizi_main_tenkan" draggable="true" ondragstart="dragpoint(event)">字</button><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
+		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="year_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="year_deizi_main_ten_god">字字</span>
 	</div> 
 </div> 
 
@@ -260,9 +266,7 @@
 		} else {
 			return "black";
 		}
-	}
-
-	console.log(longevity_calculate("甲", "寅"))  
+	} 
 
     function getWuxinColor(data) { 
         if (水.includes(data)) {
@@ -290,28 +294,9 @@
         } 
     }
 
-	var drag_text = "";
+	var last_text = "";
 
-	function dragpoint(event) {
-        drag_text = event.target.innerHTML; 
-    }  
-
-	function droppoint(event) {
-		var drop_text = event.target.innerHTML; 
-		document.getElementById("hint").style.display = "block"; 
-		if (tenkan_order.includes(drag_text) && deizi_order.includes(drop_text)) {
-			document.getElementById("text_1").innerHTML = drop_text; 
-			document.getElementById("text_1").style.color = getWuxinColor(drop_text); 
-			document.getElementById("text_2").innerHTML = drag_text; 
-			document.getElementById("text_2").style.color = getWuxinColor(drag_text); 
-			var longevity = longevity_calculate(drag_text, drop_text); 
-			document.getElementById("text_info").innerHTML = longevity;  
-			document.getElementById("text_info").style.color = longevity_color(longevity); 
-		}
-
-		//reset
-		drag_text = "";
-	}
+	
 
     /**
  * @author szargv@wo.cn
@@ -1700,11 +1685,12 @@ function calculate() {
 					one_word.style.marginRight = "5px" 
 					one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][1])
 					one_word.textContent = deizi_hidden_tenkan[characters[i]][1]
-					one_word.draggable=true 
-					one_word.ondragstart= function(event) {dragpoint(event)}
+					one_word.onclick = function(){remember_text(this)} 
+					
 					div.appendChild(one_word)
 
-					var two_words = document.createElement("button")
+					var two_words = document.createElement("span")
+					two_words.style.textAlign = "center"
 					two_words.style.backgroundColor = "transparent"
 					two_words.style.border = "none"
 					two_words.style.fontSize = "25px" 
@@ -1725,11 +1711,12 @@ function calculate() {
 						one_word.style.marginRight = "5px"
 						one_word.style.color = getWuxinColor(deizi_hidden_tenkan[characters[i]][2])
 						one_word.textContent = deizi_hidden_tenkan[characters[i]][2]
-						one_word.draggable=true 
-						one_word.ondragstart= function(event) {dragpoint(event)}
+						one_word.onclick = function(){remember_text(this)} 		
+						
 						div.appendChild(one_word)
 
-						var two_words = document.createElement("button")
+						var two_words = document.createElement("span")
+						two_words.style.textAlign = "center"
 						two_words.style.backgroundColor = "transparent"
 						two_words.style.border = "none"
 						two_words.style.fontSize = "25px" 
@@ -1789,6 +1776,43 @@ function deizi_tip_toggle() {
 		document.getElementById("deizi_tip_button").style.color = "black"  
 	}
 }
+
+var first_text = "";
+var second_text = ""; 
+var first_div = null;
+var div_color = null;
+
+function remember_text(div) {
+	if (first_text == "") {
+		first_text = div.innerHTML;
+		div_color = div.style.backgroundColor;
+		div.style.backgroundColor = "#90EE90";
+		first_div = div;
+	} else {
+		second_text = div.innerHTML; 
+		info_toggle(); 
+		first_div.style.backgroundColor = div_color; 
+		first_div = null;
+		div_color = null;
+	}
+}
+
+function info_toggle() {
+	document.getElementById("hint").style.display = "block"; 
+	if (tenkan_order.includes(first_text) && deizi_order.includes(second_text)) {
+		document.getElementById("text_1").innerHTML = second_text; 
+		document.getElementById("text_1").style.color = getWuxinColor(second_text); 
+		document.getElementById("text_2").innerHTML = first_text; 
+		document.getElementById("text_2").style.color = getWuxinColor(first_text); 
+		var longevity = longevity_calculate(first_text, second_text); 
+		document.getElementById("text_info").innerHTML = longevity;  
+		document.getElementById("text_info").style.color = longevity_color(longevity); 
+	} 
+	first_text = "";
+	second_text = ""; 
+}
+
+//longevity_calculate("甲", "寅")
 </script> 
 </body>
 </html>
