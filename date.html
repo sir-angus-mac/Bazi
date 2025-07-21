@@ -1651,7 +1651,8 @@ function calculate() {
         var ans = p.GetInfo(sex, parseInt(year, 10), parseInt(month, 10), parseInt(day, 10), parseInt(hour, 10), 0, 0);
 		// ***BAZI INFO: 
 		console.log(ans)
-        var characters = ans.bazi.split("");  
+        var characters = ans.bazi.split(""); 
+		var self = characters[4];  
 		bazi = ans.bazi;
 
 		//Big Fortune 
@@ -1717,7 +1718,7 @@ function calculate() {
             	deizi_main_tenkan_text.style.color = getWuxinColor(deizi_main_tenkan) 
 
 				const deizi_main_ten_god_text = document.getElementById(bazi_characters[i] + "_main_ten_god") 
-				deizi_main_ten_god_text.innerHTML = calculateTenGod(characters[4], deizi_main_tenkan)
+				deizi_main_ten_god_text.innerHTML = calculateTenGod(self, deizi_main_tenkan)
 
 				// <span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span>
 				const deizi_other_ten_god_container = document.getElementById(bazi_characters[i] + "_other_ten_god_container") 
@@ -1761,7 +1762,7 @@ function calculate() {
 					two_words.style.border = "none"
 					two_words.style.fontSize = "25px" 
 					two_words.style.color = "black"
-					two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][1])
+					two_words.textContent = calculateTenGod(self, deizi_hidden_tenkan[characters[i]][1])
 					div.appendChild(two_words)
 					deizi_other_ten_god_container.appendChild(div) 
 					if (deizi_hidden_tenkan[characters[i]].length == 3) {
@@ -1787,7 +1788,7 @@ function calculate() {
 						two_words.style.border = "none"
 						two_words.style.fontSize = "25px" 
 						two_words.style.color = "black"
-						two_words.textContent = calculateTenGod(characters[4], deizi_hidden_tenkan[characters[i]][2])
+						two_words.textContent = calculateTenGod(self, deizi_hidden_tenkan[characters[i]][2])
 						div.appendChild(two_words)
 						deizi_other_ten_god_container.appendChild(div) 
 					} 
@@ -1795,7 +1796,7 @@ function calculate() {
 			} else if (bazi_characters[i] != "day_tenkan") {
 				const tenkan_ten_god_text = document.getElementById(bazi_characters[i] + "_ten_god") 
 				tenkan_ten_god_text.style.backgroundColor = getYinYangColor(characters[i])
-				tenkan_ten_god_text.innerHTML = calculateTenGod(characters[4],characters[i]) 
+				tenkan_ten_god_text.innerHTML = calculateTenGod(self,characters[i]) 
 			}
         }
 
