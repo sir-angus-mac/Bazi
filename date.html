@@ -49,13 +49,15 @@
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >月</span>
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >年</span>
 	<span style="font-size: 37.5px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center; height: fit-content; margin-top: auto; margin-bottom: auto;" class="big_fortune">大運</span> 
+	<span style="font-size: 37.5px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center; height: fit-content; margin-top: auto; margin-bottom: auto;" class="fortune_year">流年</span> 
 </div> 
 <div style="display: flex;"> 
-    <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="hour_tenkan_ten_god">字字</span> 
+    <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="hour_tenkan_ten_god">字字</span>  
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid white; width: 80px" >日元</span> 
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="month_tenkan_ten_god">字字</span> 
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="year_tenkan_ten_god">字字</span>  
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="big_fortune_tenkan_ten_god" class="big_fortune">字字</span>  
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="fortune_year_tenkan_ten_god" class="fortune_year">字字</span>  
 </div>
 
 
@@ -66,6 +68,7 @@
     <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="month_tenkan">字</button>
     <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="year_tenkan">字</button>
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="big_fortune_tenkan" class="big_fortune">字</button>
+	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_year_tenkan" class="fortune_year">字</button>
 </div>    
 <div style="display: flex; margin-top: 5px;"> 
     <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="hour_deizi">字</button>
@@ -73,6 +76,7 @@
     <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="month_deizi">字</button>
     <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="year_deizi">字</button> 
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="big_fortune_deizi" class="big_fortune">字</button>
+	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_year_deizi" class="fortune_year">字</button>
 </div>  
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -81,6 +85,7 @@
 	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="month_self_sit">字字</div> 
 	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="year_self_sit">字字</div>  
 	<div class="big_fortune"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="big_fortune_self_sit">字字</div> </div> 
+	<div class="fortune_year"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="fortune_year_self_sit">字字</div> </div> 
 </div>   
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -99,6 +104,9 @@
 	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="big_fortune_deizi_main_ten_god_container" class="big_fortune">
 		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="big_fortune_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="big_fortune_deizi_main_ten_god">字字</span>
 	</div> 
+	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="fortune_year_deizi_main_ten_god_container" class="fortune_year">
+		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="fortune_year_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="fortune_year_deizi_main_ten_god">字字</span>
+	</div> 
 </div> 
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -107,6 +115,7 @@
 	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="month_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="year_deizi_other_ten_god_container"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="big_fortune_deizi_other_ten_god_container" class="big_fortune"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="fortune_year_deizi_other_ten_god_container" class="fortune_year"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 </div> 
 
 <br>
@@ -135,7 +144,17 @@
 
 <br> 
 
-<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="big_fortune_button" onclick="big_fortune_toggle()">大運</button> 
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="big_fortune_button" onclick="toggle('big_fortune')">大運</button> 
+
+<br><br>
+
+<div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="fortune_year_div">  
+	<div id = "fortune_year_selection" style="width:fit-content; display: flex;">  
+
+	</div>  
+</div>  
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_year_button" onclick="toggle('fortune_year')">流年</button> 
 
 <br>
 
@@ -144,6 +163,7 @@
 <script>
     // IMPORTANT Note: Original code by liujiawm on github 
 	var bazi = ""
+	var mode = "";
 
     const 水 = ["水", "壬", "癸", "子", "亥"] 
     const 火 = ["火", "丙", "丁", "午", "巳"]
@@ -1454,8 +1474,9 @@ function calculateTenGod(day_tenkan, compare_word) {
 const w3svg = "http://www.w3.org/2000/svg";
 const deizi_tips = document.getElementById("deizi_tips") 
 const big_fortune_selection = document.getElementById("big_fortune_selection") 
+const fortune_year_selection = document.getElementById("fortune_year_selection") 
 
-function find(found) { 
+function find(found) {  
 	if (found.length > 0 ) { 
 		for (var f of found) {
 			// Graph color
@@ -1527,6 +1548,9 @@ function find(found) {
 			text.style.textAlign = "center"
 			if (max_row - min_row > 2) {
 				text.style.width = (max_row - min_row).toString() + "00px"
+				if (min_row > 0) {
+					text.style.marginLeft = min_row.toString() + "00px"
+				} 
 			} else if (max_row - min_row == 2) {
 				text.style.width = "300px"
 				if (min_row > 0) {
@@ -1625,7 +1649,7 @@ function six_relationships() {
 			var found_poses = []
 			var found_chars = [] //make sure char doesnt repeat
 			for (let i = 0; i < bazi.length; i++) {
-				var char = bazi.split("")[i]
+				var char = bazi.split("")[i] 
 				if (list[key].includes(char) && !found_chars.includes(char)) {
 					found_poses.push((bazi.length/2)-((i+1)/2))  
 					found_chars.push(char)
@@ -1640,11 +1664,75 @@ function six_relationships() {
 	find(found);
 }
 
+function attachStems(words, selection, type_string, date_info, date_info_size, date_show) {
+	var div = document.createElement("div") 
+	div.style.margin = "5px" 
 
-function calculate(full_reset) {
+	var date_upper = document.createElement("button");
+	date_upper.innerHTML = date_show; 
+	date_upper.style.fontSize = date_info_size;
+	date_upper.style.marginRight = "10px";
+	date_upper.style.marginBottom = "10px";
+	date_upper.style.border = "2px solid black";
+	date_upper.style.width = "94px"; 
+	date_upper.style.paddingBottom = "4px";
+	date_upper.style.paddingRight = "atuo";
+	date_upper.style.paddingLeft = "atuo";
+	date_upper.style.textAlign = "center";
+	date_upper.style.backgroundColor = "#e3eefc";
+	date_upper.style.boxShadow = "5px 5px 5px lightblue"; 
+	date_upper.onclick = function() {
+		if (this.innerHTML == date_show) {
+			this.style.fontSize = "15px"; 
+			this.innerHTML = date_info[0] + "/" + date_info[1] +  "/" + date_info[2]
+			this.style.height = date_info_size; 
+		} else {
+			this.style.fontSize = date_info_size; 
+			this.innerHTML = date_show
+			this.style.height = "auto";  
+		}
+	}
+	div.appendChild(date_upper) 
+
+	div.appendChild(document.createElement("br"))
+
+	var btn = document.createElement("button")
+	btn.innerHTML = words[0]
+	btn.style.color = getWuxinColor(words[0])
+	btn.style.backgroundColor = getYinYangColor(words[0])
+	btn.style.fontSize = "75px"
+	btn.style.marginRight = "10px"
+	btn.style.padding = "5px"
+	btn.style.border = "2px solid black"
+	btn.style.width = "94px"
+	btn.onclick = function() {userAdded(this)}
+	btn.dataset.info = words + " " + type_string
+	div.appendChild(btn)
+
+	div.appendChild(document.createElement("br"))
+
+	var btn2 = document.createElement("button")
+	btn2.innerHTML = words[1]
+	btn2.style.color = getWuxinColor(words[1]) 
+	btn2.style.backgroundColor = getYinYangColor(words[1])
+	btn2.style.fontSize = "75px"
+	btn2.style.marginRight = "10px"
+	btn2.style.padding = "5px"
+	btn2.style.border = "2px solid black"
+	btn2.style.width = "94px"
+	btn2.style.marginTop = "5px" 
+	btn2.onclick = function() {userAdded(this)}
+	btn2.dataset.info = words + " " + type_string
+	div.appendChild(btn2) 
+	
+	selection.appendChild(div)  
+}
+
+function calculate(full_reset) { 
 	// Reset deizi tips
 	deizi_tips.innerHTML = ""
-	big_fortune_selection.innerHTML = ""
+	big_fortune_selection.innerHTML = "" 
+	fortune_year_selection.innerHTML = "" 
 
     try { 
         var p = new paipan();
@@ -1653,11 +1741,15 @@ function calculate(full_reset) {
         const month = document.getElementById("month").value
         const day = document.getElementById("day").value
         const hour = document.getElementById("hour").value
+		const yr = parseInt(year, 10)
+		const mth = parseInt(month, 10)
+		const dy = parseInt(day, 10)
+		const hr = parseInt(hour, 10)
 		var sex = 0;
 		if (document.getElementById("sex").value == "女") {
-			sex = 1;
+			sex = 1; 
 		}
-        var ans = p.GetInfo(sex, parseInt(year, 10), parseInt(month, 10), parseInt(day, 10), parseInt(hour, 10), 0, 0);
+        var ans = p.GetInfo(sex, yr, mth, dy, hr, 0, 0);
 		// ***BAZI INFO: 
 		console.log(ans)
         var characters = ans.bazi.split(""); 
@@ -1665,7 +1757,7 @@ function calculate(full_reset) {
 		bazi = ans.bazi;
 
 		//Big Fortune 
-		for (var w = 0; w < ans.big.length/2; w++) {
+		for (var w = 0; w < ans.big.length/2-1; w++) {
 			// <div style="margin: 5px;">
 			// <div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="year_self_sit">字字</div>  
 			// <br>
@@ -1673,61 +1765,25 @@ function calculate(full_reset) {
 			// <br>
 			// <button onclick="remember_text(this)" style="margin-top: 5px; color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px;">字</button> 
 			// </div>
-			var div = document.createElement("div") 
-			div.style.margin = "5px" 
-
-			var big_fortune_year = document.createElement("div");
-			big_fortune_year.innerHTML = ans.big_start_time[w][0];
-			big_fortune_year.style.fontSize = "37.5px";
-			big_fortune_year.style.marginRight = "10px";
-			big_fortune_year.style.padding = "5px";
-			big_fortune_year.style.paddingTop = "2px";
-			big_fortune_year.style.border = "2px solid black";
-			big_fortune_year.style.width = "80px";
-			big_fortune_year.style.height = "45px";
-			big_fortune_year.style.textAlign = "center";
-			big_fortune_year.style.backgroundColor = "#e3eefc";
-			big_fortune_year.style.boxShadow = "5px 5px 5px lightblue";  
-			div.appendChild(big_fortune_year) 
-
-			div.appendChild(document.createElement("br"))
-
-			var btn = document.createElement("button")
-			btn.innerHTML = ans.big[w*2]
-			btn.style.color = getWuxinColor(ans.big[w*2])
-			btn.style.backgroundColor = getYinYangColor(ans.big[w*2])
-			btn.style.fontSize = "75px"
-			btn.style.marginRight = "10px"
-			btn.style.padding = "5px"
-			btn.style.border = "2px solid black"
-			btn.style.width = "94px"
-			btn.onclick = function() {userAdded(this)}
-			btn.dataset.info = ans.big[w*2] + ans.big[w*2+1] + " " + "big_fortune"
-			div.appendChild(btn)
-
-			div.appendChild(document.createElement("br"))
-
-			var btn2 = document.createElement("button")
-			btn2.innerHTML = ans.big[w*2+1]
-			btn2.style.color = getWuxinColor(ans.big[w*2+1])
-			btn2.style.backgroundColor = getYinYangColor(ans.big[w*2+1])
-			btn2.style.fontSize = "75px"
-			btn2.style.marginRight = "10px"
-			btn2.style.padding = "5px"
-			btn2.style.border = "2px solid black"
-			btn2.style.width = "94px"
-			btn2.style.marginTop = "5px" 
-			btn2.onclick = function() {userAdded(this)}
-			btn2.dataset.info = ans.big[w*2] + ans.big[w*2+1] + " " + "big_fortune"
-			div.appendChild(btn2)
-			
-			big_fortune_selection.appendChild(div) 
+			var big_fortune_words = ans.big[w*2] + ans.big[w*2+1];
+			attachStems(big_fortune_words, big_fortune_selection, "big_fortune", ans.big_start_time[w], "35px", ans.big_start_time[w][0]) 
 		}
+
+		var bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
+		var stems = ["hour", "day", "month", "year"];  
 		var big_fortune = "";
+		var fortune_year = "";
 
 		if (full_reset) {
+			mode = ""; 
+			document.getElementById("big_fortune_tenkan").innerHTML = "字"
+			document.getElementById("big_fortune_deizi").innerHTML = "字" 
+			document.getElementById("fortune_year_tenkan").innerHTML = "字"
+			document.getElementById("fortune_year_deizi").innerHTML = "字" 
+
 			var i = 0;
 
+			//auto generate current big fortune
 			for (const bst of ans.big_start_time) {
 				var time_now = new Date(Date.now());
 				var yyyy = bst[0].toString().toString();
@@ -1752,14 +1808,18 @@ function calculate(full_reset) {
 					break 
 				}
 			} 
-		} else { // User manually added big_fortune, year, etc. 
-			big_fortune = document.getElementById("big_fortune_tenkan").innerHTML + document.getElementById("big_fortune_deizi").innerHTML; 
-		}
+		} else { // User manually added big_fortune, year, etc.  (START HERE) 
+			if (document.getElementById("big_fortune_tenkan").innerHTML != "字") {
+				big_fortune = document.getElementById("big_fortune_tenkan").innerHTML + document.getElementById("big_fortune_deizi").innerHTML; 
+			}  
+			if (document.getElementById("fortune_year_tenkan").innerHTML != "字") {
+				if (!["big_fortune"].includes(mode)) { 
+					fortune_year = document.getElementById("fortune_year_tenkan").innerHTML + document.getElementById("fortune_year_deizi").innerHTML; 
+				} 
+			}  
+		} 
 		
-		bazi = big_fortune + bazi; 
-        
-        var bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
-		var stems = ["hour", "day", "month", "year"]; 
+		bazi = big_fortune + bazi;  
 
 		if (big_fortune != "") {
 			bazi_characters.unshift("big_fortune_tenkan")
@@ -1770,21 +1830,116 @@ function calculate(full_reset) {
 
 			for (const a of document.getElementsByClassName("big_fortune")) {
 				a.style.display = "block"
+			} 
+
+			// generate big fortune years 
+			var fbfd = ans.big_start_time[0];
+			var nbfd = ans.big_start_time[1]; //ANGUS: REMEMBER TO FIX IF THE FORTUNE YEAR is LAST 
+			var big_fortune_test = ""
+			for (var y = 0; y < ans.big_start_time.length; y++) {
+				if (ans.big.substring(y*2, y*2+2) == big_fortune) {
+					fbfd = ans.big_start_time[y]; 
+					nbfd = ans.big_start_time[y+1]; 
+					break
+				}
+			}
+			
+			var test_year = 0;
+			if (fbfd[1] == 1) {
+				test_year = fbfd[0];
+			} else {
+				test_year = fbfd[0] + 1;
+			} 
+			var current_fortune_year = p.GetInfo(sex, fbfd[0], fbfd[1], fbfd[2], fbfd[3], 0, 0).bazi.substring(0,2); 
+
+			var last_fortune_year = p.GetInfo(sex, nbfd[0], nbfd[1], nbfd[2], nbfd[3], 0, 0).bazi.substring(0,2); 
+			
+			var all_fortune_years = []
+			all_fortune_years.push({fy: current_fortune_year, date: fbfd}) 
+			
+			while (last_fortune_year != current_fortune_year) {
+				var detected_fortune_year = current_fortune_year; 
+				var d = 1;
+				while (detected_fortune_year == current_fortune_year) {
+					var test_ans = p.GetInfo(sex, test_year, 2, d, 0, 0, 0);
+					var test_ans_year = test_ans.bazi.substring(0,2); 
+					detected_fortune_year = test_ans_year;
+					d += 1;
+				}
+				all_fortune_years.push({fy: detected_fortune_year, date: [test_year, 2, d]}) 
+				current_fortune_year = detected_fortune_year; 
+				test_year += 1; 
+			}  
+
+			for (const fyi of all_fortune_years) {
+				attachStems(fyi.fy, fortune_year_selection, "fortune_year", fyi.date, "35px", fyi.date[0]) 
+			} 
+
+		} else {
+			// Small fortune 
+			for (const a of document.getElementsByClassName("big_fortune")) {
+				a.style.display = "none"
+			}
+
+			// generate small fortune years 
+			var test_year = 0;
+			if (month == 1) {
+				test_year = yr;
+			} else {
+				test_year = yr + 1;
+			} 
+			var fbfd = ans.big_start_time[0]; 
+			var current_fortune_year = ans.bazi.substring(0,2); 
+
+			var last_fortune_year = p.GetInfo(sex, fbfd[0], fbfd[1], fbfd[2], fbfd[3], 0, 0).bazi.substring(0,2); 
+			
+			var all_fortune_years = []
+			all_fortune_years.push({fy: current_fortune_year, date: [yr, mth, dy]}) 
+			
+			while (last_fortune_year != current_fortune_year) {
+				var detected_fortune_year = current_fortune_year; 
+				var d = 1;
+				while (detected_fortune_year == current_fortune_year) {
+					var test_ans = p.GetInfo(sex, test_year, 2, d, 0, 0, 0);
+					var test_ans_year = test_ans.bazi.substring(0,2); 
+					detected_fortune_year = test_ans_year;
+					d += 1;
+				}
+				all_fortune_years.push({fy: detected_fortune_year, date: [test_year, 2, d]}) 
+				current_fortune_year = detected_fortune_year; 
+				test_year += 1; 
+			} 
+
+			for (const fyi of all_fortune_years) {
+				attachStems(fyi.fy, fortune_year_selection, "fortune_year", fyi.date, "35px", fyi.date[0]) 
+			} 
+		} 
+
+		if (fortune_year != "") {
+			bazi_characters.unshift("fortune_year_tenkan")
+			bazi_characters.unshift("fortune_year_deizi")
+			characters.unshift(fortune_year[0])
+			characters.unshift(fortune_year[1])
+			stems.unshift("fortune_year") 
+			bazi = fortune_year + bazi 
+			for (const a of document.getElementsByClassName("fortune_year")) {
+				a.style.display = "block" 
 			}
 		} else {
-			for (const a of document.getElementsByClassName("big_fortune")) {
+			for (const a of document.getElementsByClassName("fortune_year")) {
 				a.style.display = "none"
 			}
 		} 
 
 		// *** BAZI + BIG FORTUNE 
-		// console.log(bazi) 
-		// console.log(characters) 
 
         for (var i=0; i < bazi_characters.length; i++) {
             const ele = document.getElementById(bazi_characters[i]) 
             ele.style.color = getWuxinColor(characters[i])
-            ele.innerHTML = characters[i]
+            ele.innerHTML = characters[i] 
+			if (characters[i] == "字") {
+				break; 
+			} 
             ele.style.backgroundColor = getYinYangColor(characters[i])
 
 			// Calculate ten gods 
@@ -1886,19 +2041,19 @@ function calculate(full_reset) {
 		} 
 
         document.getElementById("warn").style.display = "none" 
-		document.getElementById("big_fortune_div").style.width = (bazi.length / 2).toString() + "00px"; 
+		document.getElementById("big_fortune_div").style.width = (bazi.length / 2).toString() + "00px";  
+		document.getElementById("fortune_year_div").style.width = (bazi.length / 2).toString() + "00px"; 
 
-		deizi_tips.innerHTML = "";
-		three_rendezvous();
-		four_seasons(); 
+		deizi_tips.innerHTML = "";  
+		three_rendezvous(); 
+		four_seasons();  
 		three_punishments();
 		six_relationships(); 
     } catch (error) {
 		//Reset 
 		console.log(error) 
 
-        document.getElementById("warn").style.display = "block"
-        const bazi_characters = ["year_tenkan","year_deizi","month_tenkan","month_deizi","day_tenkan","day_deizi","hour_tenkan","hour_deizi"] 
+        document.getElementById("warn").style.display = "block" 
         for (var i=0; i < 8; i++) {
             const ele = document.getElementById(bazi_characters[i]) 
             ele.innerHTML = "字"
@@ -1926,16 +2081,16 @@ function deizi_tip_toggle() {
 }
 
 var big_fortune_on = false; 
-function big_fortune_toggle() {
+function toggle(type) {
 	if (big_fortune_on) { 
-		document.getElementById("big_fortune_div").style.display = "none" 
-		document.getElementById("big_fortune_button").style.border = "2px solid black" 
-		document.getElementById("big_fortune_button").style.color = "black" 
+		document.getElementById(type + "_div").style.display = "none" 
+		document.getElementById(type + "_button").style.border = "2px solid black" 
+		document.getElementById(type + "_button").style.color = "black" 
 		big_fortune_on = false; 
 	} else {
-		document.getElementById("big_fortune_div").style.display = "block" 
-		document.getElementById("big_fortune_button").style.border = "2px dashed black" 
-		document.getElementById("big_fortune_button").style.color = "gray" 
+		document.getElementById(type + "_div").style.display = "block" 
+		document.getElementById(type + "_button").style.border = "2px dashed black" 
+		document.getElementById(type + "_button").style.color = "gray" 
 		big_fortune_on = true;  
 	}
 }
@@ -1978,14 +2133,15 @@ function info_toggle() {
 }
 
 for (const a of document.getElementsByClassName("big_fortune")) {
-	a.style.display = "none"
+	a.style.display = "none" 
 }
 
 function userAdded(div) {
 	var info = div.dataset.info.split(" ")
 	document.getElementById(info[1] + "_tenkan").innerHTML = info[0][0]
 	document.getElementById(info[1] + "_deizi").innerHTML = info[0][1] 
-	calculate(false);
+	mode = info[1]; 
+	calculate(false); 
 }
 
 </script> 
