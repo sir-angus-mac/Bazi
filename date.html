@@ -43,7 +43,7 @@
 	</div>
 </div> 
 
-<div style="display: flex;"> 
+<div style="display: flex;">
     <span style="font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >時</span> 
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >日</span>
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >月</span>
@@ -51,6 +51,7 @@
 	<span style="font-size: 37.5px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center; height: fit-content; margin-top: auto; margin-bottom: auto;" class="big_fortune">大運</span> 
 	<span style="font-size: 37.5px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center; height: fit-content; margin-top: auto; margin-bottom: auto;" class="fortune_year">流年</span> 
 	<span style="font-size: 37.5px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center; height: fit-content; margin-top: auto; margin-bottom: auto;" class="fortune_month">流月</span> 
+	<span style="font-size: 37.5px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center; height: fit-content; margin-top: auto; margin-bottom: auto;" class="fortune_day">流日</span> 
 </div> 
 <div style="display: flex;"> 
     <span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="hour_tenkan_ten_god">字字</span>  
@@ -60,6 +61,7 @@
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="big_fortune_tenkan_ten_god" class="big_fortune">字字</span>  
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="fortune_year_tenkan_ten_god" class="fortune_year">字字</span>  
 	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="fortune_month_tenkan_ten_god" class="fortune_month">字字</span>  
+	<span style="font-size: 37.5px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 80px" id="fortune_day_tenkan_ten_god" class="fortune_day">字字</span>  
 </div>
 
 
@@ -72,6 +74,7 @@
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="big_fortune_tenkan" class="big_fortune">字</button>
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_year_tenkan" class="fortune_year">字</button>
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_month_tenkan" class="fortune_month">字</button>
+	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_day_tenkan" class="fortune_day">字</button>
 </div>    
 <div style="display: flex; margin-top: 5px;"> 
     <button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="hour_deizi">字</button>
@@ -81,6 +84,7 @@
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="big_fortune_deizi" class="big_fortune">字</button>
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_year_deizi" class="fortune_year">字</button>
 	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_month_deizi" class="fortune_month">字</button>
+	<button onclick="remember_text(this)" style="color: rgb(209, 209, 209); font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid black; width: 94px; " id="fortune_day_deizi" class="fortune_day">字</button>
 </div>  
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -90,7 +94,8 @@
 	<div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="year_self_sit">字字</div>  
 	<div class="big_fortune"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="big_fortune_self_sit">字字</div> </div> 
 	<div class="fortune_year"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="fortune_year_self_sit">字字</div> </div> 
-	<div class="fortune_month"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="fortune_month_self_sit">字字</div> </div> 
+	<div class="fortune_month"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="fortune_month_self_sit">字字</div> </div>
+	<div class="fortune_day"><div style="font-size: 37.5px; margin-right: 10px; padding: 5px; padding-top: 2px;border: 2px solid black; width: 80px; margin-right: 10px; height:45px; display: flex; align-items: center; justify-content: center" id="fortune_day_self_sit">字字</div> </div> 
 </div>   
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -115,6 +120,9 @@
 	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="fortune_month_deizi_main_ten_god_container" class="fortune_month">
 		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="fortune_month_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="fortune_month_deizi_main_ten_god">字字</span>
 	</div> 
+	<div style="margin-right: 10px; border: 2px solid black; padding: 5px; width: 80px" id="fortune_day_deizi_main_ten_god_container" class="fortune_day">
+		<button onclick="remember_text(this)" style="font-size: 25px; margin-left: 0px; margin-right: 2px; padding:0px; background-color:transparent; border: none" id="fortune_day_deizi_main_tenkan">字</button><span style="font-size: 25px;" id="fortune_day_deizi_main_ten_god">字字</span>
+	</div> 
 </div> 
 
 <div style="display: flex; margin-top: 10px;"> 
@@ -125,6 +133,7 @@
 	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="big_fortune_deizi_other_ten_god_container" class="big_fortune"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="fortune_year_deizi_other_ten_god_container" class="fortune_year"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div>
 	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="fortune_month_deizi_other_ten_god_container" class="fortune_month"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
+	<div style="margin-right: 10px; border: 2px solid white; width: 90px; height: fit-content" id="fortune_day_deizi_other_ten_god_container" class="fortune_day"><span style="font-size: 25px; margin-right: 5px; color: white">字</span><span style="font-size: 25px; color: white">字字</span></div> 
 </div>  
 
 <br>
@@ -174,6 +183,16 @@
 </div>  
 
 <button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_month_button" onclick="toggle('fortune_month')">流月</button>  
+
+<br><br>
+
+<div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="fortune_day_div">  
+	<div id = "fortune_day_selection" style="width:fit-content; display: flex;">  
+
+	</div>  
+</div> 
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_day_button" onclick="toggle('fortune_day')">流日</button>  
 
 <br>
 
@@ -1496,6 +1515,7 @@ const deizi_tips = document.getElementById("deizi_tips")
 const big_fortune_selection = document.getElementById("big_fortune_selection") 
 const fortune_year_selection = document.getElementById("fortune_year_selection") 
 const fortune_month_selection = document.getElementById("fortune_month_selection") 
+const fortune_day_selection = document.getElementById("fortune_day_selection") 
 
 function find(found) {  
 	if (found.length > 0 ) { 
@@ -1757,6 +1777,7 @@ function calculate(full_reset) {
 	big_fortune_selection.innerHTML = "" 
 	fortune_year_selection.innerHTML = "" 
 	fortune_month_selection.innerHTML = ""  
+	fortune_day_selection.innerHTML = "" 
 
     try { 
         var p = new paipan();
@@ -1798,6 +1819,7 @@ function calculate(full_reset) {
 		var big_fortune = "";
 		var fortune_year = "";
 		var fortune_month = ""; 
+		var fortune_day = "";
 
 		if (full_reset) {
 			mode = ""; 
@@ -1966,6 +1988,7 @@ function calculate(full_reset) {
 
 		if (fortune_year != "") {
 			document.getElementById("fortune_month_button").style.display = "block" 
+
 			bazi_characters.unshift("fortune_year_tenkan")
 			bazi_characters.unshift("fortune_year_deizi")
 			characters.unshift(fortune_year[0])
@@ -1990,7 +2013,7 @@ function calculate(full_reset) {
 					var d_stem = eight_words.substring(4,6)
 					if (y_stem != fortune_year) { 
 						break
-					}
+					} 
 
 					if (!(m_stem in year_calendar)) {
 						year_calendar[m_stem] = [] 
@@ -2015,34 +2038,53 @@ function calculate(full_reset) {
 			} 
 		} else {
 			document.getElementById("fortune_month_button").style.display = "none"
+
 			for (const a of document.getElementsByClassName("fortune_year")) {
 				a.style.display = "none"
 			} 
-		} 
+		}  
 
 		if (Object.keys(year_calendar).length > 0) { 
-			for (const key in year_calendar) { 
-				var start_date = year_calendar[key][0].date 
-				console.log(start_date)
+			for (const key in year_calendar) {  
+				var start_date = year_calendar[key][0].date  
 				attachStems(key, fortune_month_selection, "fortune_month", start_date, "35px", start_date[1] + "/" + start_date[2]) 
 			}
-		}
+		} 
 
 		if (fortune_month != "") { 
+			document.getElementById("fortune_day_button").style.display = "block"
+
 			bazi_characters.unshift("fortune_month_tenkan")
 			bazi_characters.unshift("fortune_month_deizi")
 			characters.unshift(fortune_month[0])
 			characters.unshift(fortune_month[1]) 
 			stems.unshift("fortune_month")
-			bazi = fortune_month + bazi
+			bazi = fortune_month + bazi 
+
+			for (const jsn of year_calendar[fortune_month]) {  
+				attachStems(jsn.d_stem, fortune_day_selection, "fortune_day", jsn.date, "35px", jsn.date[1] + "/" + jsn.date[2])  
+			}
+
 			for (const a of document.getElementsByClassName("fortune_month")) {
 				a.style.display = "block" 
 			}
 		} else {
+			document.getElementById("fortune_day_button").style.display = "none" 
+
 			for (const a of document.getElementsByClassName("fortune_month")) {
 				a.style.display = "none"
 			}
 		}
+
+		if (fortune_day != "") {
+			for (const a of document.getElementsByClassName("fortune_day")) {
+				a.style.display = "block" 
+			} 
+		} else {
+			for (const a of document.getElementsByClassName("fortune_day")) {
+				a.style.display = "none"  
+			}
+		} 
 
 		// *** BAZI + BIG FORTUNE 
 
@@ -2157,6 +2199,7 @@ function calculate(full_reset) {
 		document.getElementById("big_fortune_div").style.width = (bazi.length / 2).toString() + "00px";  
 		document.getElementById("fortune_year_div").style.width = (bazi.length / 2).toString() + "00px"; 
 		document.getElementById("fortune_month_div").style.width = (bazi.length / 2).toString() + "00px"; 
+		document.getElementById("fortune_day_div").style.width = (bazi.length / 2).toString() + "00px";  
 
 		deizi_tips.innerHTML = "";  
 		three_rendezvous(); 
@@ -2180,7 +2223,7 @@ function calculate(full_reset) {
 calculate(true) 
 
 var deizi_tip_on = false
-function deizi_tip_toggle() {
+function deizi_tip_toggle() { 
 	if (!deizi_tip_on) {
 		deizi_tip_on = true
 		document.getElementById("deizi_tips").style.display = "block"
@@ -2198,6 +2241,7 @@ var on = {
 	"big_fortune": false,
 	"fortune_year": false,
 	"fortune_month": false,
+	"fortune_day": false, 
 }; 
 function toggle(type) { 
 	if (on[type]) { 
