@@ -1885,6 +1885,11 @@ function calculate(full_reset) {
 					fortune_month = document.getElementById("fortune_month_tenkan").innerHTML + document.getElementById("fortune_month_deizi").innerHTML; 
 				} 
 			} 
+			if (document.getElementById("fortune_day_tenkan").innerHTML != "字") {
+				if (!["big_fortune", "fortune_year", "fortune_month"].includes(mode)) { 
+					fortune_day = document.getElementById("fortune_day_tenkan").innerHTML + document.getElementById("fortune_day_deizi").innerHTML; 
+				}  
+			}  
 		} 
 		
 		bazi = big_fortune + bazi;  
@@ -2061,6 +2066,8 @@ function calculate(full_reset) {
 			stems.unshift("fortune_month")
 			bazi = fortune_month + bazi 
 
+			console.log("hiii " + fortune_month) 
+			console.log(year_calendar)
 			for (const jsn of year_calendar[fortune_month]) {  
 				attachStems(jsn.d_stem, fortune_day_selection, "fortune_day", jsn.date, "35px", jsn.date[1] + "/" + jsn.date[2])  
 			}
@@ -2077,6 +2084,13 @@ function calculate(full_reset) {
 		}
 
 		if (fortune_day != "") {
+			bazi_characters.unshift("fortune_day_tenkan")
+			bazi_characters.unshift("fortune_day_deizi")
+			characters.unshift(fortune_day[0])
+			characters.unshift(fortune_day[1]) 
+			stems.unshift("fortune_day")
+			bazi = fortune_day + bazi  
+
 			for (const a of document.getElementsByClassName("fortune_day")) {
 				a.style.display = "block" 
 			} 
