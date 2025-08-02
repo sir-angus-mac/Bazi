@@ -43,6 +43,11 @@
 	</div>
 </div> 
 
+
+<div id = "tenkan_tips" style="display: none; border: 2px dashed black; width: fit-content; background-color: aliceblue;">  
+	<!-- <svg width="400px" height="25px"></svg> -->
+</div>
+
 <div style="display: flex;">
     <span style="font-size: 75px; margin-right: 10px; padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >時</span> 
     <span style="font-size: 75px; margin-right: 10px;  padding: 5px; border: 2px solid white; width: 80px; text-align: center;" >日</span>
@@ -138,15 +143,31 @@
 
 <br>
 
-<div id = "deizi_tips" style="display: none; border: 2px dashed black; width: fit-content; background-color: aliceblue;">  
+<div id = "deizi_tips" style="display: none; border: 2px dashed black; width: fit-content; background-color: #fcfae8;">  
 	<!-- <svg width="400px" height="25px"></svg> -->
-</div>
+</div> 
 
 <br>
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="tenkan_tip_button" onclick="tenkan_tip_toggle()">天干提示</button>
 
 <button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="deizi_tip_button" onclick="deizi_tip_toggle()">地支提示</button>
 
 <br><br>
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="big_fortune_button" onclick="toggle('big_fortune')">大運</button> 
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_year_button" onclick="toggle('fortune_year')">流年</button> 
+
+<br><br>
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_month_button" onclick="toggle('fortune_month')">流月</button> 
+
+<br> 
+
+<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_day_button" onclick="toggle('fortune_day')">流日</button> 
+
+<br>
 
 <div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="big_fortune_div"> 
 	<div id = "big_fortune_selection" style="width:fit-content; display: flex;">  
@@ -160,11 +181,7 @@
 	</div> 
 </div> 
 
-<br> 
-
-<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="big_fortune_button" onclick="toggle('big_fortune')">大運</button> 
-
-<br><br>
+<br>
 
 <div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="fortune_year_div">  
 	<div id = "fortune_year_selection" style="width:fit-content; display: flex;">  
@@ -172,29 +189,23 @@
 	</div>  
 </div>  
 
-<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_year_button" onclick="toggle('fortune_year')">流年</button> 
-
-<br><br>
+<br>
 
 <div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="fortune_month_div">  
 	<div id = "fortune_month_selection" style="width:fit-content; display: flex;">  
 
 	</div>  
-</div>  
+</div>   
 
-<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_month_button" onclick="toggle('fortune_month')">流月</button>  
+<br>
 
-<br><br>
-
-<div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="fortune_day_div">  
+<div style="border: dashed 2px black; width: 400px; background-color: aliceblue; overflow-x: scroll; display: none; padding: 15px" id="fortune_day_div"> 
 	<div id = "fortune_day_selection" style="width:fit-content; display: flex;">  
 
 	</div>  
-</div> 
+</div>  
 
-<button style="padding-bottom: 4px; font-size: 25px; margin-right: 14px; border: 2px solid black; width: 170px; height: fit-content" id="fortune_day_button" onclick="toggle('fortune_day')">流日</button>  
-
-<br>
+<br><br>  
 
 <span style="color: red; display: none;" id="warn">Please enter a proper date.</span>
 
@@ -297,6 +308,24 @@
 			"5": ["辰", "丑"],
 			"6": ["寅", "亥"], 
 		} 
+	}
+
+	const tenkan_rel = {
+		"合": 
+		{
+			"土": ["甲", "己"], 
+			"金": ["乙", "庚"], 
+			"水": ["丙", "辛"],
+			"木": ["丁", "壬"],
+			"火": ["戊", "癸"]
+		},
+		"沖":
+		{
+			"1": ["甲", "庚"], 
+			"2": ["乙", "辛"], 
+			"3": ["丙", "壬"],
+			"4": ["丁", "癸"], 
+		}
 	}
 
 	const tenkan_order = [
@@ -1511,13 +1540,14 @@ function calculateTenGod(day_tenkan, compare_word) {
 }
 
 const w3svg = "http://www.w3.org/2000/svg";
+const tenkan_tips = document.getElementById("tenkan_tips")  
 const deizi_tips = document.getElementById("deizi_tips") 
 const big_fortune_selection = document.getElementById("big_fortune_selection") 
 const fortune_year_selection = document.getElementById("fortune_year_selection") 
 const fortune_month_selection = document.getElementById("fortune_month_selection") 
 const fortune_day_selection = document.getElementById("fortune_day_selection") 
 
-function find(found) {  
+function deizi_find(found) {  
 	if (found.length > 0 ) { 
 		for (var f of found) {
 			// Graph color
@@ -1590,18 +1620,100 @@ function find(found) {
 			if (max_row - min_row > 2) {
 				text.style.width = (max_row - min_row).toString() + "00px"
 				if (min_row > 0) {
-					text.style.marginLeft = min_row.toString() + "00px"
+					text.style.marginLeft = min_row.toString() + "00px" 
 				} 
-			} else if (max_row - min_row == 2) {
-				text.style.width = "300px"
-				if (min_row > 0) {
-					text.style.marginLeft = "100px"
-				}
 			} else {
 				text.style.width = "200px"
 				text.style.marginLeft = (min_row).toString() + "00px" 
 			}
 			deizi_tips.append(text)
+		}
+	} 
+}
+
+function tenkan_find(found) {  
+	if (found.length > 0 ) { 
+		for (var f of found) {
+			// Graph color
+			var graph_color = getWuxinColor(f.element);
+			if (["1","2","3","4","5","6"].includes(f.element)) {
+				graph_color = "purple" 
+			} 
+			var arrow_tag = "arrow_" + f.element + "_tenkan"
+
+			//Setup
+			var svg = document.createElementNS(w3svg, "svg");
+			svg.setAttribute("width", (bazi.length / 2).toString() + "00px");
+			svg.setAttribute("height", "35px");
+			var defs = document.createElementNS(w3svg, "defs");
+			var marker = document.createElementNS(w3svg, "marker");
+			marker.setAttribute("id", arrow_tag);
+			marker.setAttribute("markerWidth", "5");
+			marker.setAttribute("markerHeight", "5");
+			marker.setAttribute("refX", "2.5");
+			marker.setAttribute("refY", "5");
+			var path = document.createElementNS(w3svg, "path");
+			path.setAttribute("d", "M 2.5 5 L 5 0 L 0 0 z");
+			path.setAttribute("fill", graph_color);
+			marker.append(path) 
+			defs.append(marker)
+			svg.append(defs) 
+
+			//Place text (tip) 
+			var text = document.createElement("h5")
+			text.innerHTML = f.chars.join("") + f.type  
+			if ( f.element != "" && !["1","2","3","4","5","6"].includes(f.element) && !["一","二","三","四","五","六"].includes(f.element)) {
+				text.innerHTML += "：" 
+				if (f.type == "合") {
+					text.innerHTML +=  "化" + f.element 
+				} else if ( f.type.includes("合") || f.type.includes("會")) { 
+					text.innerHTML += f.element + "局" 
+				} else {
+					text.innerHTML += f.element
+				}
+			}  
+			text.style.fontSize = "20px"
+			text.style.color = graph_color 
+			text.style.margin = "0px"
+			
+			var min_row = Math.min(...f.poses)
+			var max_row = Math.max(...f.poses)
+			text.style.textAlign = "center"
+			if (max_row - min_row > 2) {
+				text.style.width = (max_row - min_row).toString() + "00px"
+				if (min_row > 0) {
+					text.style.marginLeft = min_row.toString() + "00px" 
+				} 
+			} else {
+				text.style.width = "200px"
+				text.style.marginLeft = (min_row).toString() + "00px" 
+			} 
+			tenkan_tips.append(text) 
+
+			//Place arrows 
+			var true_poses = [] 
+			for (var p of f.poses) {  
+				var true_pos = p*102+45
+				true_poses.push(true_pos)
+				var polyline = document.createElementNS(w3svg, "polyline");
+				polyline.setAttribute("points", (true_pos).toString() + ",35 " + (true_pos).toString() + ",10");
+				polyline.setAttribute("stroke", graph_color);
+				polyline.setAttribute("stroke-width", "2");
+				polyline.setAttribute("fill", "none");
+				polyline.setAttribute("marker-start", "url(#" + arrow_tag + ")");
+				svg.append(polyline)
+			} 
+
+			//Place horizontal line 
+			var h_line = document.createElementNS(w3svg, "polyline");
+			h_line.setAttribute("points", (Math.min(...true_poses)).toString() + ",10 " + (Math.max(...true_poses)).toString() + ",10"); 
+			h_line.setAttribute("stroke", graph_color); 
+			h_line.setAttribute("stroke-width", "2");
+			h_line.setAttribute("fill", "none");
+			svg.append(h_line)
+
+			// Graph Add! 
+			tenkan_tips.append(svg) 
 		}
 	} 
 }
@@ -1626,7 +1738,7 @@ function three_rendezvous() {
 		} 
 	}
 	
-	find(found);
+	deizi_find(found);
 } 
 
 function three_punishments() {
@@ -1654,7 +1766,7 @@ function three_punishments() {
 		} 
 	}
 	
-	find(found);
+	deizi_find(found);
 } 
 
 function four_seasons() {
@@ -1677,7 +1789,7 @@ function four_seasons() {
 		} 
 	} 
 	
-	find(found);
+	deizi_find(found);
 } 
 
 function six_relationships() {
@@ -1702,7 +1814,31 @@ function six_relationships() {
 		}
 	}
 
-	find(found);
+	deizi_find(found); 
+}
+
+function tenkan_relationships() {
+	var BAZI = bazi.split("")
+	var found = []
+ 
+	for (let kw in tenkan_rel) {
+		var list = tenkan_rel[kw];
+		for (let key in list) {
+			var found_poses = []
+			var found_chars = [] //make sure char doesnt repeat
+			for (let i = 0; i < bazi.length; i++) {
+				var char = bazi.split("")[i] 
+				if (list[key].includes(char) && !found_chars.includes(char)) {
+					found_poses.push((bazi.length/2)-i/2-1)   
+					found_chars.push(char)
+				} 
+			} 
+			if (found_poses.length == 2) {
+				found.push({type: kw, element: key, poses: found_poses, chars: found_chars})
+			} 
+		}
+	}
+	tenkan_find(found);   
 }
 
 function attachStems(words, selection, type_string, date_info, date_info_size, date_show) {
@@ -1773,6 +1909,7 @@ function attachStems(words, selection, type_string, date_info, date_info_size, d
 
 function calculate(full_reset) { 
 	// Reset deizi tips
+	tenkan_tips.innerHTML = "" 
 	deizi_tips.innerHTML = ""
 	big_fortune_selection.innerHTML = "" 
 	fortune_year_selection.innerHTML = "" 
@@ -1890,7 +2027,7 @@ function calculate(full_reset) {
 					fortune_day = document.getElementById("fortune_day_tenkan").innerHTML + document.getElementById("fortune_day_deizi").innerHTML; 
 				}  
 			}  
-		} 
+		}  
 		
 		bazi = big_fortune + bazi;  
 
@@ -2098,6 +2235,13 @@ function calculate(full_reset) {
 			for (const a of document.getElementsByClassName("fortune_day")) {
 				a.style.display = "none"  
 			}
+		}  
+
+		if (fortune_month == "") {
+			document.getElementById("fortune_day_div").style.display = "none" 
+			if (fortune_year == "") {
+				document.getElementById("fortune_month_div").style.display = "none"
+			}
 		} 
 
 		// *** BAZI + BIG FORTUNE 
@@ -2108,7 +2252,7 @@ function calculate(full_reset) {
             ele.innerHTML = characters[i] 
 			if (characters[i] == "字") {
 				break; 
-			} 
+			}
             ele.style.backgroundColor = getYinYangColor(characters[i])
 
 			// Calculate ten gods 
@@ -2220,6 +2364,7 @@ function calculate(full_reset) {
 		four_seasons();  
 		three_punishments();
 		six_relationships(); 
+		tenkan_relationships();
     } catch (error) {
 		//Reset 
 		console.log(error) 
@@ -2242,12 +2387,27 @@ function deizi_tip_toggle() {
 		deizi_tip_on = true
 		document.getElementById("deizi_tips").style.display = "block"
 		document.getElementById("deizi_tip_button").style.border = "2px dashed black" 
-		document.getElementById("deizi_tip_button").style.color = "gray" 
+		document.getElementById("deizi_tip_button").style.color = "brown"  
 	} else {
 		deizi_tip_on = false
 		document.getElementById("deizi_tips").style.display = "none"
 		document.getElementById("deizi_tip_button").style.border = "2px solid black" 
 		document.getElementById("deizi_tip_button").style.color = "black"  
+	}
+}
+
+var tenkan_tip_on = false
+function tenkan_tip_toggle() { 
+	if (!tenkan_tip_on) { 
+		tenkan_tip_on = true 
+		document.getElementById("tenkan_tips").style.display = "block"
+		document.getElementById("tenkan_tip_button").style.border = "2px dashed black" 
+		document.getElementById("tenkan_tip_button").style.color = "#60c0d1" 
+	} else {
+		tenkan_tip_on = false
+		document.getElementById("tenkan_tips").style.display = "none"
+		document.getElementById("tenkan_tip_button").style.border = "2px solid black" 
+		document.getElementById("tenkan_tip_button").style.color = "black"  
 	}
 }
 
