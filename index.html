@@ -469,38 +469,47 @@
             return day + (s[(v - 20) % 10] || s[v] || s[0]);
         }
 
-        // State tracker for collapsed section boxes
-        const collapsedSections = new Set(); 
+        // Set initial collapsed state on page load
+        const collapsedSections = new Set([
+            'stemRelContainer',
+            'invisibleStemRelContainer',
+            'invisibleBranchRelContainer',
+            'relContainer' 
+        ]);
 
         function toggleSection(sectionId) {
-            if (collapsedSections.has(sectionId)) {
-                collapsedSections.delete(sectionId);
-            } else {
-                collapsedSections.add(sectionId);
-            }
-            const el = document.getElementById(sectionId);
-            if (el) {
-                el.classList.toggle('collapsed', collapsedSections.has(sectionId));
-            }
-        }
-
-        function handleSectionClick(event, sectionId) {
-            // Prevent section collapse if the user clicks an interactive element inside the SVG
-            if (event.target.closest('g[onclick]') || event.target.closest('rect[onclick]')) {
-                return;
-            }
             const el = document.getElementById(sectionId);
             if (!el) return;
 
-            // If collapsed, clicking anywhere on the collapsed bar expands it
+            // Direct class toggle ensures HTML state and JS state stay synchronized
+            el.classList.toggle('collapsed');
+
+            // NEW: Sync the Set tracker so renderGrid() maintains the correct state upon redrawing
+            if (el.classList.contains('collapsed')) {
+                collapsedSections.add(sectionId);
+            } else {
+                collapsedSections.delete(sectionId);
+            } 
+        }
+
+        function handleSectionClick(event, sectionId) {
+            // 1. Ignore clicks on inner interactive SVG elements
+            if (event.target.closest('g[onclick]') || event.target.closest('rect[onclick]')) {
+                return;
+            }
+
+            const el = document.getElementById(sectionId);
+            if (!el) return;
+
+            // 2. If collapsed, clicking anywhere inside the bar opens it on click #1
             if (el.classList.contains('collapsed')) {
                 toggleSection(sectionId);
                 return;
             }
 
-            // If expanded, only toggle collapse when clicking directly on or near the container border (within 12px of edges)  
+            // 3. If expanded, only toggle when clicking within 8px of the outer border
             const rect = el.getBoundingClientRect();
-            const threshold = 12; 
+            const threshold = 8;
             const clickX = event.clientX;
             const clickY = event.clientY;
 
@@ -2576,13 +2585,13 @@
                 html += `<div class="bazi-rect"${getColOnClick(idx)}>${god}</div>`;
             });
 
-            // Row 3: Stem Relationship Container
-            const stemColl = collapsedSections.has('stemRelContainer') ? ' collapsed' : '';
-            html += `<div class="bazi-rel-container${stemColl} collapsed" id="stemRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'stemRelContainer')"></div>`;
+            // Row 3: Stem Relationship Container 
+            const stemColl = collapsedSections.has('stemRelContainer') ? ' collapsed' : ''; 
+            html += `<div class="bazi-rel-container${stemColl}" id="stemRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'stemRelContainer')"></div>`;
 
             // Row 3.5: Invisible Heavenly Stem Relationship Container
             const invStemColl = collapsedSections.has('invisibleStemRelContainer') ? ' collapsed' : '';
-            html += `<div class="bazi-rel-container${invStemColl} collapsed" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'invisibleStemRelContainer')"></div>`;
+            html += `<div class="bazi-rel-container${invStemColl}" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'invisibleStemRelContainer')"></div>`;
 
             // Row 4: Stem Squares 
             stems.forEach((char, idx) => {
@@ -2610,11 +2619,11 @@
 
             // Row 6: Invisible Branch Relationship Container
             const invBranchColl = collapsedSections.has('invisibleBranchRelContainer') ? ' collapsed' : '';
-            html += `<div class="bazi-rel-container${invBranchColl} collapsed" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'invisibleBranchRelContainer')"></div>`;
+            html += `<div class="bazi-rel-container${invBranchColl}" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'invisibleBranchRelContainer')"></div>`;
 
             // Row 7: Branch Relationship Container 
             const relColl = collapsedSections.has('relContainer') ? ' collapsed' : '';
-            html += `<div class="bazi-rel-container${relColl} collapsed" id="relContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'relContainer')"></div>`;
+            html += `<div class="bazi-rel-container${relColl}" id="relContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'relContainer')"></div>`;
 
             // Row 8: 12 Life Stages vs Day Master
             lifeStagesDM.forEach((ls, idx) => { 
@@ -2783,106 +2792,98 @@
                 monthSelect.appendChild(opt);
             }
 
-            for (let h = 0; h < 24; h++) {
+            for (let d = 1; d <= 31; d++) {
+                let opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                if (d === currentDate) opt.selected = true;
+                daySelect.appendChild(opt);
+            }
+
+            for (let h = 0; h <= 23; h++) {
                 let opt = document.createElement('option');
                 opt.value = h;
-                opt.textContent = h < 10 ? '0' + h : h;
+                opt.textContent = h;
                 if (h === currentHour) opt.selected = true;
                 hourSelect.appendChild(opt);
             }
 
-            sexSelect.value = "0";
-
-            function calculate() {
+            function calculateBazi() {
                 try {
-                    errorResult.textContent = "";
+                    errorResult.textContent = '';
+                    const y = parseInt(yearSelect.value, 10);
+                    const m = parseInt(monthSelect.value, 10);
+                    const d = parseInt(daySelect.value, 10);
+                    const h = parseInt(hourSelect.value, 10);
+                    const sex = parseInt(sexSelect.value, 10);
+
+                    if (typeof paipan === 'undefined') {
+                        errorResult.textContent = 'paipan.js is missing or not loaded properly.';
+                        return;
+                    }
+
+                    var p = new paipan();
+                    p.zwz = false;
+                    var ans = p.GetInfo(sex, y, m, d, h, 0, 0);
+
+                    if (!ans || !ans.bazi) {
+                        errorResult.textContent = 'Error calculating Bazi data.';
+                        return;
+                    }
+
+                    let bigList = [];
+                    if (ans.big && ans.big.length > 0) {
+                        for (let i = 0; i < ans.big.length; i++) {
+                            const b = ans.big[i];
+                            const yearVal = (ans.big_start_time && ans.big_start_time[i]) ? ans.big_start_time[i][0] : '';
+                            bigList.push({
+                                year: yearVal,
+                                stem: b[0],
+                                branch: b[1]
+                            });
+                        }
+                    }
+
+                    currentBaziData = {
+                        A: ans.bazi[0],
+                        B: ans.bazi[1],
+                        C: ans.bazi[2],
+                        D: ans.bazi[3],
+                        E: ans.bazi[4],
+                        F: ans.bazi[5],
+                        G: ans.bazi[6],
+                        H: ans.bazi[7],
+                        bigList: bigList,
+                        big_start_time: ans.big_start_time || []
+                    };
+
                     selectedYuanyun = null;
-                    selectedDayun = null;   
-                    selectedLiunian = null; 
-                    selectedLiuyue = null;  
-                    selectedLiuri = null;   
-                    selectedLiushi = null;  
-                    yuanyunBarVisible = false;
+                    selectedDayun = null;
+                    selectedLiunian = null;
+                    selectedLiuyue = null;
+                    selectedLiuri = null;
+                    selectedLiushi = null;
+
                     liunianBarVisible = false;
                     liuyueBarVisible = false;
                     liuriBarVisible = false;
                     liushiBarVisible = false;
+
                     liunianBtn.style.display = 'none';
                     liuyueBtn.style.display = 'none';
                     liuriBtn.style.display = 'none';
                     liushiBtn.style.display = 'none';
 
-                    var p = new paipan();
-                    p.zwz = false;
-                    
-                    const yr = parseInt(yearSelect.value, 10);
-                    const mth = parseInt(monthSelect.value, 10);
-                    const dy = parseInt(daySelect.value, 10);
-                    const hr = parseInt(hourSelect.value, 10);
-                    var sex = parseInt(sexSelect.value, 10); 
-
-                    var ans = p.GetInfo(sex, yr, mth, dy, hr, 0, 0); 
-                    
-                    if (ans && ans.bazi && ans.bazi.length >= 8) {
-                        const bigList = [];
-                        if (ans.big) {
-                            const times = ans.big_start_time || [];
-                            for (let i = 0; i < ans.big.length; i += 2) {
-                                const idx = i / 2;
-                                const stem = ans.big[i];
-                                const branch = ans.big[i + 1];
-                                let year = "";
-                                if (times[idx] && times[idx].length > 0) {
-                                    year = times[idx][0];
-                                }
-                                bigList.push({ stem, branch, year });
-                            }
-                        }
-
-                        currentBaziData = {
-                            A: ans.bazi[0],
-                            B: ans.bazi[1],
-                            C: ans.bazi[2],
-                            D: ans.bazi[3],
-                            E: ans.bazi[4],
-                            F: ans.bazi[5],
-                            G: ans.bazi[6],
-                            H: ans.bazi[7],
-                            bigList: bigList,
-                            big_start_time: ans.big_start_time
-                        };
-
-                        renderYuanyunBar();
-                        renderDayunBar();
-                        renderLiunianBar();
-                        renderLiuyueBar();
-                        renderLiuriBar();
-                        renderLiushiBar();
-                        renderGrid();
-                    }
-                } catch (e) {
-                    console.error(e);
-                    errorResult.textContent = "Error: " + e.message;
+                    renderGrid();
+                    renderYuanyunBar();
+                    renderDayunBar();
+                    renderLiunianBar();
+                    renderLiuyueBar();
+                    renderLiuriBar();
+                    renderLiushiBar();
+                } catch (err) {
+                    errorResult.textContent = err.message || 'Error executing calculation.';
                 }
-            }
-
-            function updateDays(targetDay) {
-                const year = parseInt(yearSelect.value, 10);
-                const month = parseInt(monthSelect.value, 10);
-                const selectedDay = targetDay || parseInt(daySelect.value, 10) || 1;
-
-                const daysInMonth = new Date(year, month, 0).getDate();
-
-                daySelect.innerHTML = '';
-                for (let d = 1; d <= daysInMonth; d++) {
-                    let opt = document.createElement('option');
-                    opt.value = d;
-                    opt.textContent = d;
-                    daySelect.appendChild(opt);
-                }
-
-                daySelect.value = selectedDay <= daysInMonth ? selectedDay : daysInMonth;
-                calculate();
             }
 
             yuanyunBtn.addEventListener('click', () => {
@@ -2915,14 +2916,14 @@
                 renderLiushiBar();
             });
 
-            yearSelect.addEventListener('change', () => updateDays());
-            monthSelect.addEventListener('change', () => updateDays());
-            daySelect.addEventListener('change', calculate);
-            hourSelect.addEventListener('change', calculate);
-            sexSelect.addEventListener('change', calculate);
+            yearSelect.addEventListener('change', calculateBazi);
+            monthSelect.addEventListener('change', calculateBazi);
+            daySelect.addEventListener('change', calculateBazi);
+            hourSelect.addEventListener('change', calculateBazi);
+            sexSelect.addEventListener('change', calculateBazi);
 
-            updateDays(currentDate);
-        });  // lol
+            calculateBazi();
+        });
     </script>
 </body>
-</html>
+</html> 
