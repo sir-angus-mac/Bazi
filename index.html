@@ -31,6 +31,7 @@
             --sel-liuyue-bg: #f3ebf9;
             --sel-liuri-bg: #e8f8f0;
             --sel-liushi-bg: #e0f7fa;
+            --sel-yuanyun-bg: #fff0f5;
         }
 
         [data-theme="dark"] {
@@ -53,6 +54,7 @@
             --sel-liuyue-bg: #321452;
             --sel-liuri-bg: #0a3a18;
             --sel-liushi-bg: #00363d;
+            --sel-yuanyun-bg: #4a0033;
         }
 
         body {
@@ -96,7 +98,6 @@
         .btn-theme {
             font-size: 14px;
             padding: 2px 8px;
-            margin-left: auto;
         }
 
         /* Bazi Grid Components */
@@ -225,6 +226,10 @@
             border-color: #007bff;
             background-color: var(--sel-dayun-bg);
         }
+        .dayun-card.selected-yuanyun {
+            border-color: #e83e8c;
+            background-color: var(--sel-yuanyun-bg);
+        }
         .dayun-card.selected-liunian {
             border-color: #e67e22;
             background-color: var(--sel-liunian-bg);
@@ -271,6 +276,8 @@
 <body>
 
     <div class="controls-bar">
+        <button id="themeToggleBtn" class="btn-dayun btn-theme">☀️</button>
+        <button id="nowBtn" class="btn-dayun">Now</button>
         <select id="yearSelect"></select> 年
         <select id="monthSelect"></select> 月
         <select id="daySelect"></select> 日
@@ -279,13 +286,16 @@
             <option value="0">男</option>
             <option value="1">女</option>
         </select> 命
+        <button id="yuanyunBtn" class="btn-dayun">元運</button>
         <button id="dayunBtn" class="btn-dayun">大運</button>
         <button id="liunianBtn" class="btn-dayun" style="display: none;">流年</button>
         <button id="liuyueBtn" class="btn-dayun" style="display: none;">流月</button>
         <button id="liuriBtn" class="btn-dayun" style="display: none;">流日</button>
         <button id="liushiBtn" class="btn-dayun" style="display: none;">流時</button>
-        <button id="themeToggleBtn" class="btn-dayun btn-theme">☀️</button>
     </div>
+
+    <!-- Scrollable 元運 List -->
+    <div class="dayun-scroll-container" id="yuanyunBar"></div>
 
     <!-- Scrollable 大運 List -->
     <div class="dayun-scroll-container" id="dayunBar"></div>
@@ -328,16 +338,23 @@
         const ten_gods = ["比肩", "劫財", "七殺", "正官", "偏印", "正印", "食神", "傷官", "偏財", "正財"];
 
         const tenkan_order = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-        const deizi_order = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
+        const deizi_order = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+        const yuanYunOptions = [
+            { year: "1864", stem: "己", branch: "未" }, 
+            { year: "1924", stem: "庚", branch: "申" },
+            { year: "1984", stem: "辛", branch: "酉" },
+            { year: "2044", stem: "壬", branch: "戌" }
+        ];
+
         const tenkan_deizi_rel = {
-            "木": ["臨官","帝旺","衰","病","死","墓庫","絕","胎","養","長生","沐浴","冠帶"], 
-            "火": ["長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養"],
-            "土": ["長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養"],
-            "金": ["絕","胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫"],
-            "水": ["病","死","墓庫","絕","胎","養","長生","沐浴","冠帶","臨官","帝旺","衰"]
+            "木": ["沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養","長生"], 
+            "火": ["胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕"],
+            "土": ["胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕"],
+            "金": ["死","墓庫","絕","胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病"],
+            "水": ["帝旺","衰","病","死","墓庫","絕","胎","養","長生","沐浴","冠帶","臨官"]
         };
 
         const deizi_hidden_tenkan = {
@@ -434,11 +451,13 @@
         }
 
         let currentBaziData = null; 
+        let selectedYuanyun = null;
         let selectedDayun = null;   
         let selectedLiunian = null; 
         let selectedLiuyue = null;
         let selectedLiuri = null;
         let selectedLiushi = null;
+        let yuanyunBarVisible = false;
         let dayunBarVisible = false; 
         let liunianBarVisible = false;
         let liuyueBarVisible = false;
@@ -651,6 +670,393 @@
                 const textX = (minX + maxX) / 2;
                 const coloredText = formatColoredLabel(rel.label, strokeColor);
                 svgHtml += `<text x="${textX}" y="${yText}" font-size="14" font-weight="700" text-anchor="middle">${coloredText}</text>`;
+            });
+
+            svgHtml += `</svg>`;
+            container.innerHTML = svgHtml;
+        }
+
+        // --- INVISIBLE HEAVENLY STEM RELATIONSHIPS (盲派 暗天干) ---
+        function findInvisibleStemRelationships(stems) {  
+            const results = [];
+            const N = stems.length;
+            const seen = new Set();
+
+            const stemHeYinMap = {
+                "甲_己": "己", "己_甲": "己",
+                "乙_庚": "辛", "庚_乙": "辛",
+                "丙_辛": "癸", "辛_丙": "癸",
+                "丁_壬": "乙", "壬_丁": "乙",
+                "戊_癸": "丁", "癸_戊": "丁"
+            };
+
+            const stemChongMap = {
+                "甲": "庚", "乙": "辛", "丙": "壬", "丁": "癸", "戊": "甲",
+                "己": "乙", "庚": "丙", "辛": "丁", "壬": "戊", "癸": "己"
+            };
+
+            // Dynamically build a map for 合 partners from tenkan_relationships["合"]
+            const stemHePartnerMap = {};
+            if (typeof tenkan_relationships !== "undefined" && tenkan_relationships["合"]) {
+                for (const [elem, pair] of Object.entries(tenkan_relationships["合"])) {
+                    stemHePartnerMap[pair[0]] = pair[1];
+                    stemHePartnerMap[pair[1]] = pair[0];
+                }
+            }
+
+            // 1. Check adjacent/neighboring stems (distance 1)
+            for (let i = 0; i < N - 1; i++) {
+                const j = i + 1;
+                const s1 = stems[i];
+                const s2 = stems[j];
+                const idx1 = tenkan_order.indexOf(s1);
+                const idx2 = tenkan_order.indexOf(s2);
+
+                if (idx1 !== -1 && idx2 !== -1) {
+                    if ((idx2 - idx1 + 10) % 10 === 1 || (idx1 - idx2 + 10) % 10 === 1) {
+                        const key = `neighbor_${i}_${j}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            results.push({
+                                type: 'neighbor',
+                                indices: [i, j],
+                                hiddenStem: null
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 2. Check pairs of stems
+            for (let i = 0; i < N; i++) {
+                for (let j = i + 1; j < N; j++) {
+                    const s1 = stems[i];
+                    const s2 = stems[j];
+
+                    // Rule: Two identical Heavenly Stems spawn their 合 partner
+                    if (s1 === s2 && stemHePartnerMap[s1]) {
+                        const partnerStem = stemHePartnerMap[s1];
+                        const key = `two_same_${i}_${j}_${partnerStem}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            results.push({
+                                type: 'two_same',
+                                indices: [i, j],
+                                hiddenStem: partnerStem
+                            });
+                        }
+                    }
+
+                    const idx1 = tenkan_order.indexOf(s1);
+                    const idx2 = tenkan_order.indexOf(s2);
+
+                    if (idx1 !== -1 && idx2 !== -1) {
+                        // Missing stem in sequence (distance 2)
+                        let missingStem = null;
+                        if ((idx2 - idx1 + 10) % 10 === 2) {
+                            missingStem = tenkan_order[(idx1 + 1) % 10];
+                        } else if ((idx1 - idx2 + 10) % 10 === 2) {
+                            missingStem = tenkan_order[(idx2 + 1) % 10];
+                        }
+
+                        if (missingStem) {
+                            const key = `missing_${i}_${j}_${missingStem}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    type: 'missing_one',
+                                    indices: [i, j],
+                                    hiddenStem: missingStem
+                                });
+                            }
+                        }
+
+                        // He-Yin (合化引出) stems
+                        const comboKey = `${s1}_${s2}`;
+                        if (stemHeYinMap[comboKey]) {
+                            const yinStem = stemHeYinMap[comboKey];
+                            const key = `he_yin_${i}_${j}_${yinStem}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    type: 'he_yin',
+                                    indices: [i, j],
+                                    hiddenStem: yinStem
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Check three identical stems
+            for (let i = 0; i < N; i++) {
+                for (let j = i + 1; j < N; j++) {
+                    for (let k = j + 1; k < N; k++) {
+                        const s1 = stems[i];
+                        const s2 = stems[j];
+                        const s3 = stems[k];
+
+                        if (s1 === s2 && s2 === s3 && stemChongMap[s1]) {
+                            const qishaStem = stemChongMap[s1];
+                            const key = `three_same_${i}_${j}_${k}_${qishaStem}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    type: 'three_same',
+                                    indices: [i, j, k],
+                                    hiddenStem: qishaStem
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        function renderInvisibleStemRelationships(stems) {
+            const container = document.getElementById('invisibleStemRelContainer');
+            if (!container) return; 
+
+            const rels = findInvisibleStemRelationships(stems);
+
+            if (rels.length === 0) {
+                container.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+
+            container.style.display = 'block';
+
+            const N = stems.length;
+            const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
+            const viewBoxWidth = N * 90 + (N - 1) * 8;
+            const layerHeight = 45;
+            const totalHeight = rels.length * layerHeight + 8;
+
+            let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+            rels.forEach((rel, k) => {
+                const yTop = k * layerHeight + 6;
+                const yBar = yTop + 14;
+                const yBottom = yTop + 38;
+
+                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
+                const minX = xCoords[sortedIndices[0]];
+                const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
+                const midX = (minX + maxX) / 2;
+
+                const leftStem = stems[sortedIndices[0]];
+                const rightStem = stems[sortedIndices[sortedIndices.length - 1]];
+
+                const cLeft = getRelColor(getElementColor(leftStem));
+                const cRight = getRelColor(getElementColor(rightStem));
+
+                const gradId = `invStemGrad_${k}`;
+
+                svgHtml += `
+                    <defs>
+                        <linearGradient id="${gradId}" x1="${minX}" y1="0" x2="${maxX}" y2="0" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="${cLeft}" />
+                            <stop offset="50%" stop-color="${cLeft}" />
+                            <stop offset="50%" stop-color="${cRight}" />
+                            <stop offset="100%" stop-color="${cRight}" />
+                        </linearGradient>
+                    </defs>
+                `;
+
+                const strokeColor = `url(#${gradId})`;
+                const hasHiddenStem = Boolean(rel.hiddenStem && rel.type !== 'neighbor' && rel.type !== 'bond');
+
+                const strokeWidth = hasHiddenStem ? 2 : 3.5;
+                const dotRadius = hasHiddenStem ? 3 : 5;
+
+                if (!hasHiddenStem) {
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+
+                    sortedIndices.forEach(idx => {
+                        const x = xCoords[idx];
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                    });
+                } else {
+                    const boxSize = 26;
+                    const boxX = midX - boxSize / 2;
+                    const boxY = yBar - boxSize / 2;
+
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+
+                    const hiddenCol = getRelColor(getElementColor(rel.hiddenStem));
+                    svgHtml += `<text x="${midX}" y="${yBar + 5}" font-size="16" font-weight="700" text-anchor="middle" fill="${hiddenCol}">${rel.hiddenStem}</text>`;
+
+                    sortedIndices.forEach(idx => {
+                        const x = xCoords[idx];
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    });
+                }
+
+                sortedIndices.forEach(idx => {
+                    const x = xCoords[idx];
+                    const dotCol = getRelColor(getElementColor(stems[idx]));
+                    if (hasHiddenStem) {
+                        svgHtml += `<circle cx="${x}" cy="${yBottom}" r="${dotRadius}" fill="${dotCol}" />`;
+                    } else {
+                        svgHtml += `<circle cx="${x}" cy="${yBottom}" r="${dotRadius}" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
+                    }
+                });
+            });
+
+            svgHtml += `</svg>`;
+            container.innerHTML = svgHtml;
+        } 
+
+        // --- INVISIBLE EARTHLY BRANCH RELATIONSHIPS (盲派 暗拱/暗夾) ---
+        function findInvisibleBranchRelationships(branches) {
+            const results = [];
+            const N = branches.length;
+            const seen = new Set();
+
+            const sanHeGong = {
+                "子": ["申", "辰"],
+                "酉": ["巳", "丑"],
+                "午": ["寅", "戌"],
+                "卯": ["亥", "未"]
+            };
+
+            const sixRelPairs = [
+                ["子", "丑"], ["寅", "亥"], ["卯", "戌"],
+                ["酉", "辰"], ["巳", "申"], ["午", "未"]
+            ];
+            function getSixRelPartner(b) {
+                for (const pair of sixRelPairs) {
+                    if (pair[0] === b) return pair[1];
+                    if (pair[1] === b) return pair[0];
+                }
+                return null;
+            }
+
+            const zhiOrder = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+
+            for (let i = 0; i < N; i++) {
+                for (let j = i + 1; j < N; j++) {
+                    const b1 = branches[i];
+                    const b2 = branches[j];
+
+                    for (const [targetHidden, pair] of Object.entries(sanHeGong)) {
+                        if ((b1 === pair[0] && b2 === pair[1]) || (b1 === pair[1] && b2 === pair[0])) {
+                            const key = `${i}_${j}_${targetHidden}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    indices: [i, j],
+                                    hiddenBranch: targetHidden,
+                                    color: getElementColor(targetHidden)
+                                });
+                            }
+                        }
+                    }
+
+                    if (b1 === b2) {
+                        const partner = getSixRelPartner(b1);
+                        if (partner) {
+                            const key = `${i}_${j}_${partner}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    indices: [i, j],
+                                    hiddenBranch: partner,
+                                    color: getElementColor(partner)
+                                });
+                            }
+                        }
+                    }
+
+                    const idx1 = zhiOrder.indexOf(b1);
+                    const idx2 = zhiOrder.indexOf(b2);
+                    if (idx1 !== -1 && idx2 !== -1) {
+                        if ((idx2 - idx1 + 12) % 12 === 2) {
+                            const hiddenIdx = (idx1 + 1) % 12;
+                            const targetHidden = zhiOrder[hiddenIdx];
+                            const key = `${i}_${j}_${targetHidden}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    indices: [i, j],
+                                    hiddenBranch: targetHidden,
+                                    color: getElementColor(targetHidden)
+                                });
+                            }
+                        } else if ((idx1 - idx2 + 12) % 12 === 2) {
+                            const hiddenIdx = (idx2 + 1) % 12;
+                            const targetHidden = zhiOrder[hiddenIdx];
+                            const key = `${i}_${j}_${targetHidden}`;
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                results.push({
+                                    indices: [i, j],
+                                    hiddenBranch: targetHidden,
+                                    color: getElementColor(targetHidden)
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        function renderInvisibleBranchRelationships(branches) {
+            const container = document.getElementById('invisibleBranchRelContainer');
+            if (!container) return;
+
+            const rels = findInvisibleBranchRelationships(branches);
+
+            if (rels.length === 0) {
+                container.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+
+            container.style.display = 'block';
+
+            const N = branches.length;
+            const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
+            const viewBoxWidth = N * 90 + (N - 1) * 8;
+            const layerHeight = 45;
+            const totalHeight = rels.length * layerHeight + 8;
+
+            let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+            rels.forEach((rel, k) => {
+                const yTop = k * layerHeight + 6;
+                const yBar = yTop + 24;
+
+                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
+                const minX = xCoords[sortedIndices[0]];
+                const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
+                const midX = (minX + maxX) / 2;
+
+                let strokeColor = getRelColor(rel.color);
+                const boxSize = 26;
+                const boxX = midX - boxSize / 2;
+                const boxY = yBar - boxSize / 2;
+
+                svgHtml += `<circle cx="${minX}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
+                svgHtml += `<circle cx="${maxX}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
+
+                svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="2" />`;
+
+                svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="2" />`;
+
+                svgHtml += `<text x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}">${rel.hiddenBranch}</text>`;
             });
 
             svgHtml += `</svg>`;
@@ -927,6 +1333,25 @@
 
             svgHtml += `</svg>`;
             container.innerHTML = svgHtml;
+        }
+
+        function removeYuanyun() {
+            selectedYuanyun = null;
+            renderGrid();
+            renderYuanyunBar();
+        }
+
+        function selectYuanyun(yearStr) {
+            if (selectedYuanyun && selectedYuanyun.year === yearStr) {
+                selectedYuanyun = null;
+            } else {
+                const item = yuanYunOptions.find(opt => opt.year === yearStr);
+                if (item) {
+                    selectedYuanyun = { year: item.year, stem: item.stem, branch: item.branch };
+                }
+            }
+            renderGrid();
+            renderYuanyunBar();
         }
 
         function removeDayun() {
@@ -1485,7 +1910,8 @@
                     date: dateStr,
                     timeStr: timeStr,
                     stem: timeStem,
-                    branch: timeBranch
+                    branch: timeBranch,
+                    startDate: [y, m, day, hr]
                 });
 
                 curDate.setHours(curDate.getHours() + 2);
@@ -1508,6 +1934,149 @@
             renderGrid();
             renderLiushiBar();
         }
+
+        function selectNow() {
+            if (!currentBaziData || !currentBaziData.bigList || currentBaziData.bigList.length === 0) return;
+
+            const now = new Date();
+
+            dayunBarVisible = true;
+            renderDayunBar();
+
+            const times = currentBaziData.big_start_time || [];
+            let dayunIdx = -1;
+            for (let i = 0; i < times.length; i++) {
+                const t = times[i];
+                if (t && t.length >= 4) {
+                    const d = new Date(t[0], t[1] - 1, t[2], t[3]);
+                    if (now >= d) {
+                        dayunIdx = i;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (dayunIdx === -1) dayunIdx = 0;
+            selectDayun(dayunIdx);
+
+            const liunianList = getLiunianList(dayunIdx);
+            let liunianIdx = -1;
+            for (let j = 0; j < liunianList.length; j++) {
+                const st = getLiunianStartTime(dayunIdx, j);
+                if (st) {
+                    const d = new Date(st[0], st[1] - 1, st[2], st[3]);
+                    if (now >= d) {
+                        liunianIdx = j;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (liunianIdx === -1) liunianIdx = 0;
+            selectLiunian(liunianIdx);
+
+            const liuyueList = getLiuyueList(dayunIdx, liunianIdx);
+            let liuyueIdx = -1;
+            for (let k = 0; k < liuyueList.length; k++) {
+                const st = liuyueList[k].startDate;
+                if (st) {
+                    const d = new Date(st[0], st[1] - 1, st[2], st[3]);
+                    if (now >= d) {
+                        liuyueIdx = k;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (liuyueIdx === -1) liuyueIdx = 0;
+            selectLiuyue(liuyueIdx);
+
+            const liuriList = getLiuriList(dayunIdx, liunianIdx, liuyueIdx);
+            let liuriIdx = -1;
+            for (let l = 0; l < liuriList.length; l++) {
+                const st = liuriList[l].startDate;
+                if (st) {
+                    const d = new Date(st[0], st[1] - 1, st[2], st[3]);
+                    if (now >= d) {
+                        liuriIdx = l;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (liuriIdx === -1) liuriIdx = 0;
+            selectLiuri(liuriIdx);
+
+            const liushiList = getLiushiList(dayunIdx, liunianIdx, liuyueIdx, liuriIdx);
+            let liushiIdx = -1;
+            for (let m = 0; m < liushiList.length; m++) {
+                const st = liushiList[m].startDate;
+                if (st) {
+                    const d = new Date(st[0], st[1] - 1, st[2], st[3]);
+                    if (now >= d) {
+                        liushiIdx = m;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (liushiIdx === -1) liushiIdx = 0;
+            selectLiushi(liushiIdx);
+        }
+
+        function getFilteredYuanYunOptions() {
+            const yearSelect = document.getElementById('yearSelect');
+            const yr = parseInt(yearSelect.value, 10);
+
+            return yuanYunOptions.filter(item => {
+                const itemYear = parseInt(item.year, 10);
+                if (yr >= 2044) {
+                    return itemYear >= 2044;
+                } else if (yr >= 1984) {
+                    return itemYear >= 1984;
+                } else if (yr >= 1924) {
+                    return itemYear >= 1924;
+                } else {
+                    return itemYear >= 1864;
+                }
+            });
+        } 
+
+        function renderYuanyunBar() {
+            const bar = document.getElementById('yuanyunBar');
+            if (!bar) return;
+
+            bar.style.display = yuanyunBarVisible ? 'flex' : 'none';
+            if (!yuanyunBarVisible) {
+                bar.innerHTML = '';
+                return;
+            }
+
+            const filteredOptions = getFilteredYuanYunOptions();
+
+            let html = '';
+            filteredOptions.forEach((item) => {
+                const isSelected = selectedYuanyun && selectedYuanyun.year === item.year;
+                const stemCol = getElementColor(item.stem);
+                const stemBg = getBgColor(item.stem);
+                const branchCol = getElementColor(item.branch);
+                const branchBg = getBgColor(item.branch);
+
+                html += `
+                    <div class="dayun-card${isSelected ? ' selected-yuanyun' : ''}" onclick="selectYuanyun('${item.year}')">
+                        <div class="dayun-year">${item.year}</div>
+                        <div class="dayun-square" style="color:${stemCol}; background-color:${stemBg}">${item.stem}</div>
+                        <div class="dayun-square" style="color:${branchCol}; background-color:${branchBg}">${item.branch}</div>
+                    </div>
+                `;
+            });
+            bar.innerHTML = html;
+        } 
 
         function renderDayunBar() {
             const bar = document.getElementById('dayunBar');
@@ -1673,6 +2242,7 @@
             if (!currentBaziData) return;
 
             const { A, B, C, D, E, F, G, H } = currentBaziData;
+            const hasYuanyun = selectedYuanyun !== null;
             const hasDayun = selectedDayun !== null;
             const hasLiunian = selectedLiunian !== null;
             const hasLiuyue = selectedLiuyue !== null;
@@ -1680,6 +2250,7 @@
             const hasLiushi = selectedLiushi !== null;
 
             let colsCount = 4;
+            if (hasYuanyun) colsCount++;
             if (hasDayun) colsCount++;
             if (hasLiunian) colsCount++;
             if (hasLiuyue) colsCount++;
@@ -1718,11 +2289,22 @@
             ];
 
             let nextColIdx = 4;
+            const yuanyunColIdx = hasYuanyun ? nextColIdx++ : -1;
             const dayunColIdx = hasDayun ? nextColIdx++ : -1;
             const liunianColIdx = hasLiunian ? nextColIdx++ : -1;
             const liuyueColIdx = hasLiuyue ? nextColIdx++ : -1;
             const liuriColIdx = hasLiuri ? nextColIdx++ : -1;
             const liushiColIdx = hasLiushi ? nextColIdx++ : -1;
+
+            if (hasYuanyun) {
+                headers.push("元運");
+                upperGods.push(calculateTenGod(selectedYuanyun.stem, E));
+                stems.push(selectedYuanyun.stem);
+                branches.push(selectedYuanyun.branch);
+                lifeStagesDM.push(calculateLifeStage(selectedYuanyun.branch, E));
+                lifeStagesSub.push(calculateLifeStage(selectedYuanyun.branch, selectedYuanyun.stem));
+                hiddenStemsData.push({ branch: selectedYuanyun.branch, dm: E });
+            }
 
             if (hasDayun) {
                 headers.push("大運");
@@ -1775,6 +2357,7 @@
             }
 
             function getColOnClick(idx) {
+                if (idx === yuanyunColIdx) return ' onclick="removeYuanyun()" style="cursor:pointer; border-color:#e83e8c;"';
                 if (idx === dayunColIdx) return ' onclick="removeDayun()" style="cursor:pointer; border-color:#007bff;"';
                 if (idx === liunianColIdx) return ' onclick="removeLiunian()" style="cursor:pointer; border-color:#e67e22;"';
                 if (idx === liuyueColIdx) return ' onclick="removeLiuyue()" style="cursor:pointer; border-color:#6f42c1;"';
@@ -1787,6 +2370,7 @@
                 const col = getElementColor(char);
                 const bg = getBgColor(char);
                 let extra = '';
+                if (idx === yuanyunColIdx) extra = ' cursor:pointer; border: 2px solid #e83e8c;';
                 if (idx === dayunColIdx) extra = ' cursor:pointer; border: 2px solid #007bff;';
                 if (idx === liunianColIdx) extra = ' cursor:pointer; border: 2px solid #e67e22;';
                 if (idx === liuyueColIdx) extra = ' cursor:pointer; border: 2px solid #6f42c1;';
@@ -1802,7 +2386,10 @@
                 let extraStyle = h.length > 1 ? ' font-size: 36px;' : '';
                 let styleAttr = '';
                 let clickAttr = '';
-                if (idx === dayunColIdx) {
+                if (idx === yuanyunColIdx) {
+                    styleAttr = ` style="cursor:pointer; color:#e83e8c; font-weight:200;${extraStyle}"`;
+                    clickAttr = ' onclick="removeYuanyun()"';
+                } else if (idx === dayunColIdx) {
                     styleAttr = ` style="cursor:pointer; color:#007bff; font-weight:200;${extraStyle}"`;
                     clickAttr = ' onclick="removeDayun()"';
                 } else if (idx === liunianColIdx) {
@@ -1831,9 +2418,13 @@
             // Row 3: Stem Relationship Container
             html += `<div class="bazi-rel-container" id="stemRelContainer" style="grid-column: span ${colsCount}"></div>`;
 
+            // Row 3.5: Invisible Heavenly Stem Relationship Container
+            html += `<div class="bazi-rel-container" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}"></div>`;
+
             // Row 4: Stem Squares
             stems.forEach((char, idx) => {
                 let clickAttr = '';
+                if (idx === yuanyunColIdx) clickAttr = ' onclick="removeYuanyun()"';
                 if (idx === dayunColIdx) clickAttr = ' onclick="removeDayun()"';
                 if (idx === liunianColIdx) clickAttr = ' onclick="removeLiunian()"';
                 if (idx === liuyueColIdx) clickAttr = ' onclick="removeLiuyue()"';
@@ -1845,6 +2436,7 @@
             // Row 5: Branch Squares
             branches.forEach((char, idx) => {
                 let clickAttr = '';
+                if (idx === yuanyunColIdx) clickAttr = ' onclick="removeYuanyun()"';
                 if (idx === dayunColIdx) clickAttr = ' onclick="removeDayun()"';
                 if (idx === liunianColIdx) clickAttr = ' onclick="removeLiunian()"';
                 if (idx === liuyueColIdx) clickAttr = ' onclick="removeLiuyue()"';
@@ -1853,20 +2445,26 @@
                 html += `<div class="bazi-square" style="${getSquareStyle(idx, char)}"${clickAttr}>${char}</div>`;
             });
 
-            // Row 6: Branch Relationship Container
+            // Row 6: Invisible Branch Relationship Container
+            html += `<div class="bazi-rel-container" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}"></div>`;
+
+            // Row 7: Branch Relationship Container
             html += `<div class="bazi-rel-container" id="relContainer" style="grid-column: span ${colsCount}"></div>`;
 
-            // Row 7: 12 Life Stages vs Day Master
+            // Row 8: 12 Life Stages vs Day Master
             lifeStagesDM.forEach((ls, idx) => {
                 html += `<div class="bazi-rect"${getColOnClick(idx)}>${ls}</div>`;
             });
 
-            // Row 8: 12 Life Stages vs Respective Stems
+            // Row 9: 12 Life Stages vs Respective Stems
             lifeStagesSub.forEach((ls, idx) => {
                 let extraClass = ' bazi-rect-sub';
                 let extraStyle = '';
                 let clickAttr = '';
-                if (idx === dayunColIdx) {
+                if (idx === yuanyunColIdx) {
+                    extraStyle = ' border-color:#e83e8c; cursor:pointer;';
+                    clickAttr = ' onclick="removeYuanyun()"';
+                } else if (idx === dayunColIdx) {
                     extraStyle = ' border-color:#007bff; cursor:pointer;';
                     clickAttr = ' onclick="removeDayun()"';
                 } else if (idx === liunianColIdx) {
@@ -1885,12 +2483,15 @@
                 html += `<div class="bazi-rect${extraClass}" style="${extraStyle}"${clickAttr}>${ls}</div>`;
             });
 
-            // Rows 9 & 10: Hidden Stems
+            // Rows 10 & 11: Hidden Stems
             for (let row = 1; row <= 2; row++) {
                 hiddenStemsData.forEach((item, idx) => {
                     let extraStyle = '';
                     let clickAttr = '';
-                    if (idx === dayunColIdx) {
+                    if (idx === yuanyunColIdx) {
+                        extraStyle = ' border-color:#e83e8c; cursor:pointer;';
+                        clickAttr = ' onclick="removeYuanyun()"';
+                    } else if (idx === dayunColIdx) {
                         extraStyle = ' border-color:#007bff; cursor:pointer;';
                         clickAttr = ' onclick="removeDayun()"';
                     } else if (idx === liunianColIdx) {
@@ -1940,6 +2541,8 @@
             });
 
             renderStemRelationships(stems);
+            renderInvisibleStemRelationships(stems);
+            renderInvisibleBranchRelationships(branches);
             renderRelationships(branches);
         }
 
@@ -1949,12 +2552,14 @@
             const daySelect = document.getElementById('daySelect');
             const hourSelect = document.getElementById('hourSelect');
             const sexSelect = document.getElementById('sexSelect');
+            const yuanyunBtn = document.getElementById('yuanyunBtn');
             const dayunBtn = document.getElementById('dayunBtn');
             const liunianBtn = document.getElementById('liunianBtn');
             const liuyueBtn = document.getElementById('liuyueBtn');
             const liuriBtn = document.getElementById('liuriBtn');
             const liushiBtn = document.getElementById('liushiBtn');
             const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const nowBtn = document.getElementById('nowBtn');
             const errorResult = document.getElementById('errorResult');
 
             function setTheme(theme) {
@@ -1965,6 +2570,7 @@
                     themeToggleBtn.textContent = '☀️';
                 }
                 localStorage.setItem('theme', theme);
+                renderYuanyunBar();
                 renderDayunBar();
                 renderLiunianBar();
                 renderLiuyueBar();
@@ -1979,13 +2585,14 @@
                 setTheme(nextTheme);
             });
 
+            nowBtn.addEventListener('click', selectNow);
+
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth() + 1;
             const currentDate = now.getDate();
             const currentHour = now.getHours();
 
-            // Auto-enable Dark Mode if current time is 11:00 PM (23:00) or later
             const savedTheme = localStorage.getItem('theme');
             if (currentHour >= 23) {
                 setTheme('dark');
@@ -2024,11 +2631,13 @@
             function calculate() {
                 try {
                     errorResult.textContent = "";
+                    selectedYuanyun = null;
                     selectedDayun = null;   
                     selectedLiunian = null; 
                     selectedLiuyue = null;  
                     selectedLiuri = null;   
                     selectedLiushi = null;  
+                    yuanyunBarVisible = false;
                     liunianBarVisible = false;
                     liuyueBarVisible = false;
                     liuriBarVisible = false;
@@ -2078,6 +2687,7 @@
                             big_start_time: ans.big_start_time
                         };
 
+                        renderYuanyunBar();
                         renderDayunBar();
                         renderLiunianBar();
                         renderLiuyueBar();
@@ -2109,6 +2719,11 @@
                 daySelect.value = selectedDay <= daysInMonth ? selectedDay : daysInMonth;
                 calculate();
             }
+
+            yuanyunBtn.addEventListener('click', () => {
+                yuanyunBarVisible = !yuanyunBarVisible;
+                renderYuanyunBar();
+            });
 
             dayunBtn.addEventListener('click', () => {
                 dayunBarVisible = !dayunBarVisible;
@@ -2142,7 +2757,7 @@
             sexSelect.addEventListener('change', calculate);
 
             updateDays(currentDate);
-        }); 
-    </script> 
-</body>  
-</html>
+        }); // lol 
+    </script>
+</body> 
+</html>  
