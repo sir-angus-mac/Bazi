@@ -158,6 +158,25 @@
             box-sizing: border-box;
             padding: 4px 0;
             user-select: none;
+            cursor: default;
+            transition: all 0.2s ease;
+        }
+
+        /* Collapsed state for SVG section boxes */
+        .bazi-rel-container.collapsed {
+            border-style: dotted;
+            border-width: 2px;
+            padding: 0;
+            min-height: 10px;
+            height: 10px;
+            background-color: transparent;
+            box-shadow: none;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .bazi-rel-container.collapsed > svg {
+            display: none;
         }
         .hidden-stem-line {
             display: flex;
@@ -450,6 +469,52 @@
             return day + (s[(v - 20) % 10] || s[v] || s[0]);
         }
 
+        // State tracker for collapsed section boxes
+        const collapsedSections = new Set(); 
+
+        function toggleSection(sectionId) {
+            if (collapsedSections.has(sectionId)) {
+                collapsedSections.delete(sectionId);
+            } else {
+                collapsedSections.add(sectionId);
+            }
+            const el = document.getElementById(sectionId);
+            if (el) {
+                el.classList.toggle('collapsed', collapsedSections.has(sectionId));
+            }
+        }
+
+        function handleSectionClick(event, sectionId) {
+            // Prevent section collapse if the user clicks an interactive element inside the SVG
+            if (event.target.closest('g[onclick]') || event.target.closest('rect[onclick]')) {
+                return;
+            }
+            const el = document.getElementById(sectionId);
+            if (!el) return;
+
+            // If collapsed, clicking anywhere on the collapsed bar expands it
+            if (el.classList.contains('collapsed')) {
+                toggleSection(sectionId);
+                return;
+            }
+
+            // If expanded, only toggle collapse when clicking directly on or near the container border (within 12px of edges)  
+            const rect = el.getBoundingClientRect();
+            const threshold = 12; 
+            const clickX = event.clientX;
+            const clickY = event.clientY;
+
+            const isBorderClick = 
+                (clickX - rect.left <= threshold) ||
+                (rect.right - clickX <= threshold) ||
+                (clickY - rect.top <= threshold) ||
+                (rect.bottom - clickY <= threshold);
+
+            if (isBorderClick) {
+                toggleSection(sectionId);
+            }
+        }
+
         let currentBaziData = null; 
         let selectedYuanyun = null;
         let selectedDayun = null;   
@@ -463,6 +528,31 @@
         let liuyueBarVisible = false;
         let liuriBarVisible = false;
         let liushiBarVisible = false;
+
+        // Dynamic Column Indices for Click Delegation
+        let yuanyunColIdx = -1, dayunColIdx = -1, liunianColIdx = -1, liuyueColIdx = -1, liuriColIdx = -1, liushiColIdx = -1;
+
+        // State tracker for collapsed relationships
+        const collapsedRels = new Set();
+
+        function toggleRel(key) {
+            if (collapsedRels.has(key)) {
+                collapsedRels.delete(key);
+            } else {
+                collapsedRels.add(key);
+            }
+            renderGrid();
+        }
+
+        function getColOnClickJs(idx) {
+            if (idx === yuanyunColIdx) return 'removeYuanyun()';
+            if (idx === dayunColIdx) return 'removeDayun()';
+            if (idx === liunianColIdx) return 'removeLiunian()';
+            if (idx === liuyueColIdx) return 'removeLiuyue()';
+            if (idx === liuriColIdx) return 'removeLiuri()';
+            if (idx === liushiColIdx) return 'removeLiushi()';
+            return '';
+        }
 
         function getElement(char) {
             if (char === "水" || 水.includes(char)) return "水";
@@ -630,13 +720,15 @@
             const N = stems.length;
             const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
             const viewBoxWidth = N * 90 + (N - 1) * 8;
-            const layerHeight = 40;
-            const totalHeight = rels.length * layerHeight + 8;
+            const singleHeight = 40;
 
-            let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+            let html = '';
 
-            rels.forEach((rel, k) => {
-                const yTop = k * layerHeight + 6;
+            rels.forEach((rel) => {
+                const relKey = `stem_${rel.label}_${rel.indices.join('-')}`;
+                const isCollapsed = collapsedRels.has(relKey);
+
+                const yTop = 6;
                 const yText = yTop + 13;
                 const yBar = yTop + 18;
                 const yBottom = yTop + 34;
@@ -646,8 +738,21 @@
                 const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
 
                 let strokeColor = getRelColor(rel.color);
+                let dashAttr = isCollapsed ? ' stroke-dasharray="4,4"' : '';
+                let opacityAttr = isCollapsed ? ' opacity="0.45"' : ' opacity="1"';
 
-                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
+                let svgHtml = `<svg width="100%" height="${singleHeight}" viewBox="0 0 ${viewBoxWidth} ${singleHeight}" xmlns="http://www.w3.org/2000/svg" style="display: block;">`;
+
+                // Column click delegation
+                for (let i = 0; i < N; i++) {
+                    const clickJs = getColOnClickJs(i);
+                    if (clickJs) {
+                        svgHtml += `<rect x="${i * 98}" y="0" width="90" height="${singleHeight}" fill="transparent" style="cursor:pointer;" onclick="${clickJs}" />`;
+                    }
+                }
+
+                svgHtml += `<g style="cursor:pointer;" onclick="toggleRel('${relKey}')"${opacityAttr}>`;
+                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
 
                 rel.indices.forEach((idx, arrIdx) => {
                     const x = xCoords[idx];
@@ -656,24 +761,27 @@
                     if (isActive) {
                         if (rel.markerType === 'circle') {
                             const r = 3.5;
-                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom - r}" stroke="${strokeColor}" stroke-width="2" />`;
+                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom - r}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
                             svgHtml += `<circle cx="${x}" cy="${yBottom - r}" r="${r}" fill="${strokeColor}" />`;
                         } else {
-                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom - 5}" stroke="${strokeColor}" stroke-width="2" />`;
+                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom - 5}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
                             svgHtml += `<polygon points="${x - 4},${yBottom - 5} ${x},${yBottom} ${x + 4},${yBottom - 5}" fill="${strokeColor}" />`;
                         }
                     } else {
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="2" />`;
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
                     }
                 });
 
                 const textX = (minX + maxX) / 2;
                 const coloredText = formatColoredLabel(rel.label, strokeColor);
                 svgHtml += `<text x="${textX}" y="${yText}" font-size="14" font-weight="700" text-anchor="middle">${coloredText}</text>`;
+                svgHtml += `</g>`;
+                svgHtml += `</svg>`;
+
+                html += svgHtml;
             });
 
-            svgHtml += `</svg>`;
-            container.innerHTML = svgHtml;
+            container.innerHTML = html;
         }
 
         // --- INVISIBLE HEAVENLY STEM RELATIONSHIPS (盲派 暗天干) ---
@@ -695,7 +803,6 @@
                 "己": "乙", "庚": "丙", "辛": "丁", "壬": "戊", "癸": "己"
             };
 
-            // Dynamically build a map for 合 partners from tenkan_relationships["合"]
             const stemHePartnerMap = {};
             if (typeof tenkan_relationships !== "undefined" && tenkan_relationships["合"]) {
                 for (const [elem, pair] of Object.entries(tenkan_relationships["合"])) {
@@ -704,7 +811,6 @@
                 }
             }
 
-            // 1. Check adjacent/neighboring stems (distance 1)
             for (let i = 0; i < N - 1; i++) {
                 const j = i + 1;
                 const s1 = stems[i];
@@ -727,13 +833,11 @@
                 }
             }
 
-            // 2. Check pairs of stems
             for (let i = 0; i < N; i++) {
                 for (let j = i + 1; j < N; j++) {
                     const s1 = stems[i];
                     const s2 = stems[j];
 
-                    // Rule: Two identical Heavenly Stems spawn their 合 partner
                     if (s1 === s2 && stemHePartnerMap[s1]) {
                         const partnerStem = stemHePartnerMap[s1];
                         const key = `two_same_${i}_${j}_${partnerStem}`;
@@ -751,7 +855,6 @@
                     const idx2 = tenkan_order.indexOf(s2);
 
                     if (idx1 !== -1 && idx2 !== -1) {
-                        // Missing stem in sequence (distance 2)
                         let missingStem = null;
                         if ((idx2 - idx1 + 10) % 10 === 2) {
                             missingStem = tenkan_order[(idx1 + 1) % 10];
@@ -771,7 +874,6 @@
                             }
                         }
 
-                        // He-Yin (合化引出) stems
                         const comboKey = `${s1}_${s2}`;
                         if (stemHeYinMap[comboKey]) {
                             const yinStem = stemHeYinMap[comboKey];
@@ -789,7 +891,6 @@
                 }
             }
 
-            // 3. Check three identical stems
             for (let i = 0; i < N; i++) {
                 for (let j = i + 1; j < N; j++) {
                     for (let k = j + 1; k < N; k++) {
@@ -833,15 +934,17 @@
             const N = stems.length;
             const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
             const viewBoxWidth = N * 90 + (N - 1) * 8;
-            const layerHeight = 45;
-            const totalHeight = rels.length * layerHeight + 8;
+            const singleHeight = 52;
 
-            let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+            let html = '';
 
             rels.forEach((rel, k) => {
-                const yTop = k * layerHeight + 6;
+                const relKey = `invStem_${rel.type}_${rel.indices.join('-')}_${rel.hiddenStem || ''}`;
+                const isCollapsed = collapsedRels.has(relKey);
+
+                const yTop = 6;
                 const yBar = yTop + 14;
-                const yBottom = yTop + 38;
+                const yBottom = yTop + 36;
 
                 const sortedIndices = [...rel.indices].sort((a, b) => a - b);
                 const minX = xCoords[sortedIndices[0]];
@@ -856,6 +959,19 @@
 
                 const gradId = `invStemGrad_${k}`;
 
+                let dashAttr = isCollapsed ? ' stroke-dasharray="4,4"' : '';
+                let opacityAttr = isCollapsed ? ' opacity="0.45"' : ' opacity="1"';
+
+                let svgHtml = `<svg width="100%" height="${singleHeight}" viewBox="0 0 ${viewBoxWidth} ${singleHeight}" xmlns="http://www.w3.org/2000/svg" style="display: block;">`;
+
+                // Column click delegation
+                for (let i = 0; i < N; i++) {
+                    const clickJs = getColOnClickJs(i);
+                    if (clickJs) {
+                        svgHtml += `<rect x="${i * 98}" y="0" width="90" height="${singleHeight}" fill="transparent" style="cursor:pointer;" onclick="${clickJs}" />`;
+                    }
+                }
+
                 svgHtml += `
                     <defs>
                         <linearGradient id="${gradId}" x1="${minX}" y1="0" x2="${maxX}" y2="0" gradientUnits="userSpaceOnUse">
@@ -867,35 +983,37 @@
                     </defs>
                 `;
 
-                const strokeColor = `url(#${gradId})`;
+                const strokeColor = (minX === maxX) ? cLeft : `url(#${gradId})`;
                 const hasHiddenStem = Boolean(rel.hiddenStem && rel.type !== 'neighbor' && rel.type !== 'bond');
 
                 const strokeWidth = hasHiddenStem ? 2 : 3.5;
                 const dotRadius = hasHiddenStem ? 3 : 5;
 
+                svgHtml += `<g style="cursor:pointer;" onclick="toggleRel('${relKey}')"${opacityAttr}>`;
+
                 if (!hasHiddenStem) {
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"${dashAttr} />`;
 
                     sortedIndices.forEach(idx => {
                         const x = xCoords[idx];
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"${dashAttr} />`;
                     });
                 } else {
                     const boxSize = 26;
                     const boxX = midX - boxSize / 2;
                     const boxY = yBar - boxSize / 2;
 
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr} />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr} />`;
 
-                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr} />`;
 
                     const hiddenCol = getRelColor(getElementColor(rel.hiddenStem));
                     svgHtml += `<text x="${midX}" y="${yBar + 5}" font-size="16" font-weight="700" text-anchor="middle" fill="${hiddenCol}">${rel.hiddenStem}</text>`;
 
                     sortedIndices.forEach(idx => {
                         const x = xCoords[idx];
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr} />`;
                     });
                 }
 
@@ -908,10 +1026,13 @@
                         svgHtml += `<circle cx="${x}" cy="${yBottom}" r="${dotRadius}" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
                     }
                 });
+
+                svgHtml += `</g>`;
+                svgHtml += `</svg>`;
+                html += svgHtml;
             });
 
-            svgHtml += `</svg>`;
-            container.innerHTML = svgHtml;
+            container.innerHTML = html;
         } 
 
         // --- INVISIBLE EARTHLY BRANCH RELATIONSHIPS (盲派 暗拱/暗夾) ---
@@ -1027,13 +1148,15 @@
             const N = branches.length;
             const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
             const viewBoxWidth = N * 90 + (N - 1) * 8;
-            const layerHeight = 45;
-            const totalHeight = rels.length * layerHeight + 8;
+            const singleHeight = 48;
 
-            let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+            let html = '';
 
-            rels.forEach((rel, k) => {
-                const yTop = k * layerHeight + 6;
+            rels.forEach((rel) => {
+                const relKey = `invBranch_${rel.indices.join('-')}_${rel.hiddenBranch}`;
+                const isCollapsed = collapsedRels.has(relKey);
+
+                const yTop = 6;
                 const yBar = yTop + 24;
 
                 const sortedIndices = [...rel.indices].sort((a, b) => a - b);
@@ -1046,21 +1169,40 @@
                 const boxX = midX - boxSize / 2;
                 const boxY = yBar - boxSize / 2;
 
+                let dashAttr = isCollapsed ? ' stroke-dasharray="4,4"' : '';
+                let opacityAttr = isCollapsed ? ' opacity="0.45"' : ' opacity="1"';
+
+                let svgHtml = `<svg width="100%" height="${singleHeight}" viewBox="0 0 ${viewBoxWidth} ${singleHeight}" xmlns="http://www.w3.org/2000/svg" style="display: block;">`;
+
+                // Column click delegation
+                for (let i = 0; i < N; i++) {
+                    const clickJs = getColOnClickJs(i);
+                    if (clickJs) {
+                        svgHtml += `<rect x="${i * 98}" y="0" width="90" height="${singleHeight}" fill="transparent" style="cursor:pointer;" onclick="${clickJs}" />`;
+                    }
+                }
+
+                svgHtml += `<g style="cursor:pointer;" onclick="toggleRel('${relKey}')"${opacityAttr}>`;
                 svgHtml += `<circle cx="${minX}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
                 svgHtml += `<circle cx="${maxX}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
 
-                svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
-                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
-                svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
-                svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
+                if (minX !== maxX) {
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
+                }
+                svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
 
-                svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
 
                 svgHtml += `<text x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}">${rel.hiddenBranch}</text>`;
+                svgHtml += `</g>`;
+
+                svgHtml += `</svg>`;
+                html += svgHtml;
             });
 
-            svgHtml += `</svg>`;
-            container.innerHTML = svgHtml;
+            container.innerHTML = html;
         }
 
         function findBranchRelationships(branches) {
@@ -1241,7 +1383,7 @@
             return results;
         }
 
-        function renderRelationships(branches) {
+        function renderRelationships(branches) { 
             const container = document.getElementById('relContainer');
             if (!container) return;
 
@@ -1258,13 +1400,15 @@
             const N = branches.length;
             const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
             const viewBoxWidth = N * 90 + (N - 1) * 8;
-            const layerHeight = 40;
-            const totalHeight = rels.length * layerHeight + 8;
+            const singleHeight = 40;
 
-            let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+            let html = '';
 
             rels.forEach((rel, k) => {
-                const yTop = k * layerHeight + 6;
+                const relKey = `branch_${rel.label}_${rel.indices.join('-')}`;
+                const isCollapsed = collapsedRels.has(relKey);
+
+                const yTop = 6;
                 const yBar = yTop + 12;
                 const yText = yBar + 16;
 
@@ -1274,6 +1418,19 @@
 
                 let strokeColor = getRelColor(rel.color);
                 let textFillColor = getRelColor(rel.color);
+
+                let dashAttr = isCollapsed ? ' stroke-dasharray="4,4"' : '';
+                let opacityAttr = isCollapsed ? ' opacity="0.45"' : ' opacity="1"';
+
+                let svgHtml = `<svg width="100%" height="${singleHeight}" viewBox="0 0 ${viewBoxWidth} ${singleHeight}" xmlns="http://www.w3.org/2000/svg" style="display: block;">`;
+
+                // Column click delegation
+                for (let i = 0; i < N; i++) {
+                    const clickJs = getColOnClickJs(i);
+                    if (clickJs) {
+                        svgHtml += `<rect x="${i * 98}" y="0" width="90" height="${singleHeight}" fill="transparent" style="cursor:pointer;" onclick="${clickJs}" />`;
+                    }
+                }
 
                 if (rel.isFireEarth) {
                     const gradId = `fireEarthGrad_${k}`;
@@ -1301,7 +1458,8 @@
                     textFillColor = `url(#${textGradId})`;
                 }
 
-                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `<g style="cursor:pointer;" onclick="toggleRel('${relKey}')"${opacityAttr}>`;
+                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2"${dashAttr} />`;
 
                 rel.indices.forEach((idx, arrIdx) => {
                     const x = xCoords[idx];
@@ -1315,24 +1473,27 @@
                     if (isActive) {
                         if (rel.markerType === 'circle') {
                             const r = 3.5;
-                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yTop + r}" stroke="${itemColor}" stroke-width="2" />`;
+                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yTop + r}" stroke="${itemColor}" stroke-width="2"${dashAttr} />`;
                             svgHtml += `<circle cx="${x}" cy="${yTop + r}" r="${r}" fill="${itemColor}" />`;
                         } else {
-                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yTop + 5}" stroke="${itemColor}" stroke-width="2" />`;
+                            svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yTop + 5}" stroke="${itemColor}" stroke-width="2"${dashAttr} />`;
                             svgHtml += `<polygon points="${x - 4},${yTop + 5} ${x},${yTop} ${x + 4},${yTop + 5}" fill="${itemColor}" />`;
                         }
                     } else {
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yTop}" stroke="${itemColor}" stroke-width="2" />`;
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yTop}" stroke="${itemColor}" stroke-width="2"${dashAttr} />`;
                     }
                 });
 
                 const textX = (minX + maxX) / 2;
                 const coloredText = formatColoredLabel(rel.label, textFillColor);
                 svgHtml += `<text x="${textX}" y="${yText}" font-size="14" font-weight="700" text-anchor="middle">${coloredText}</text>`;
+                svgHtml += `</g>`;
+                svgHtml += `</svg>`;
+
+                html += svgHtml;
             });
 
-            svgHtml += `</svg>`;
-            container.innerHTML = svgHtml;
+            container.innerHTML = html;
         }
 
         function removeYuanyun() {
@@ -2289,12 +2450,12 @@
             ];
 
             let nextColIdx = 4;
-            const yuanyunColIdx = hasYuanyun ? nextColIdx++ : -1;
-            const dayunColIdx = hasDayun ? nextColIdx++ : -1;
-            const liunianColIdx = hasLiunian ? nextColIdx++ : -1;
-            const liuyueColIdx = hasLiuyue ? nextColIdx++ : -1;
-            const liuriColIdx = hasLiuri ? nextColIdx++ : -1;
-            const liushiColIdx = hasLiushi ? nextColIdx++ : -1;
+            yuanyunColIdx = hasYuanyun ? nextColIdx++ : -1;
+            dayunColIdx = hasDayun ? nextColIdx++ : -1;
+            liunianColIdx = hasLiunian ? nextColIdx++ : -1;
+            liuyueColIdx = hasLiuyue ? nextColIdx++ : -1;
+            liuriColIdx = hasLiuri ? nextColIdx++ : -1;
+            liushiColIdx = hasLiushi ? nextColIdx++ : -1;
 
             if (hasYuanyun) {
                 headers.push("元運");
@@ -2416,12 +2577,14 @@
             });
 
             // Row 3: Stem Relationship Container
-            html += `<div class="bazi-rel-container" id="stemRelContainer" style="grid-column: span ${colsCount}"></div>`;
+            const stemColl = collapsedSections.has('stemRelContainer') ? ' collapsed' : '';
+            html += `<div class="bazi-rel-container${stemColl} collapsed" id="stemRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'stemRelContainer')"></div>`;
 
             // Row 3.5: Invisible Heavenly Stem Relationship Container
-            html += `<div class="bazi-rel-container" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}"></div>`;
+            const invStemColl = collapsedSections.has('invisibleStemRelContainer') ? ' collapsed' : '';
+            html += `<div class="bazi-rel-container${invStemColl} collapsed" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'invisibleStemRelContainer')"></div>`;
 
-            // Row 4: Stem Squares
+            // Row 4: Stem Squares 
             stems.forEach((char, idx) => {
                 let clickAttr = '';
                 if (idx === yuanyunColIdx) clickAttr = ' onclick="removeYuanyun()"';
@@ -2446,13 +2609,15 @@
             });
 
             // Row 6: Invisible Branch Relationship Container
-            html += `<div class="bazi-rel-container" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}"></div>`;
+            const invBranchColl = collapsedSections.has('invisibleBranchRelContainer') ? ' collapsed' : '';
+            html += `<div class="bazi-rel-container${invBranchColl} collapsed" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'invisibleBranchRelContainer')"></div>`;
 
-            // Row 7: Branch Relationship Container
-            html += `<div class="bazi-rel-container" id="relContainer" style="grid-column: span ${colsCount}"></div>`;
+            // Row 7: Branch Relationship Container 
+            const relColl = collapsedSections.has('relContainer') ? ' collapsed' : '';
+            html += `<div class="bazi-rel-container${relColl} collapsed" id="relContainer" style="grid-column: span ${colsCount}" onclick="handleSectionClick(event, 'relContainer')"></div>`;
 
             // Row 8: 12 Life Stages vs Day Master
-            lifeStagesDM.forEach((ls, idx) => {
+            lifeStagesDM.forEach((ls, idx) => { 
                 html += `<div class="bazi-rect"${getColOnClick(idx)}>${ls}</div>`;
             });
 
@@ -2757,7 +2922,7 @@
             sexSelect.addEventListener('change', calculate);
 
             updateDays(currentDate);
-        }); // lol 
+        });  // lol
     </script>
-</body> 
-</html>  
+</body>
+</html>
