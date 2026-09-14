@@ -158,7 +158,38 @@
             box-sizing: border-box;
             padding: 4px 0;
             user-select: none;
+            cursor: pointer; /* Indicates the border is clickable */
+            transition: background-color 0.2s, border-color 0.2s;
         }
+
+        .bazi-rel-container svg {
+            cursor: default; /* Keeps the regular cursor when hovering over the SVG elements */
+        }
+
+        /* Collapsed state styling */
+        .bazi-rel-container.collapsed {
+            height: 14px;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+            box-shadow: none;
+            position: relative;
+        }
+
+        /* The dotted line effect */
+        .bazi-rel-container.collapsed::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 0;
+            right: 0;
+            border-top: 3px dotted var(--border-color);
+        }
+
+        /* Hide the SVG when collapsed */
+        .bazi-rel-container.collapsed svg {
+            display: none;
+        } 
         .hidden-stem-line {
             display: flex;
             align-items: center;
@@ -270,7 +301,22 @@
             font-weight: 400;
             background-color: var(--card-bg);
             box-sizing: border-box;
+        } 
+
+        #invisibleStemRelContainer text.spawned-stem {
+            cursor: pointer;
+            pointer-events: auto;
         }
+
+        #arrowCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        } 
     </style>
 </head>
 <body>
@@ -286,6 +332,8 @@
             <option value="0">男</option>
             <option value="1">女</option>
         </select> 命
+        <button id="disableTimeBtn" class="btn-dayun">Disable Time</button> 
+        <button id="splitBtn" class="btn-dayun">Split</button>
         <button id="yuanyunBtn" class="btn-dayun">元運</button>
         <button id="dayunBtn" class="btn-dayun">大運</button>
         <button id="liunianBtn" class="btn-dayun" style="display: none;">流年</button>
@@ -314,6 +362,13 @@
 
     <!-- Bazi Grid -->
     <div class="bazi-container" id="baziGrid"></div>
+    <svg id="arrowCanvas">
+        <defs>
+            <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff4757"/>
+            </marker>
+        </defs>
+    </svg>
 
     <pre id="errorResult" style="color: red; margin-top: 10px; font-size: 13px;"></pre>
 
@@ -347,7 +402,7 @@
             { year: "1924", stem: "庚", branch: "申" },
             { year: "1984", stem: "辛", branch: "酉" },
             { year: "2044", stem: "壬", branch: "戌" }
-        ];
+        ]; 
 
         const tenkan_deizi_rel = {
             "木": ["沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養","長生"], 
@@ -451,6 +506,7 @@
         }
 
         let currentBaziData = null; 
+        let isTimeDisabled = false; 
         let selectedYuanyun = null;
         let selectedDayun = null;   
         let selectedLiunian = null; 
@@ -463,6 +519,26 @@
         let liuyueBarVisible = false;
         let liuriBarVisible = false;
         let liushiBarVisible = false;
+        let isSplitMode = false;
+        // State tracker for collapsible relationship containers (true = collapsed initially)
+        let relContainerStates = {
+            'stemRelContainer': true,
+            'invisibleStemRelContainer': true,
+            'invisibleBranchRelContainer': true,
+            'relContainer': true
+        };
+
+        // Function to handle the expanding/collapsing
+        function toggleRelContainer(event, el) {
+            // If it is currently expanded, only collapse if the click target is exactly the border/padding
+            // This prevents collapsing when the user accidentally clicks on the SVG lines or text.
+            if (!el.classList.contains('collapsed')) {
+                if (event.target !== el) return;
+            }
+            
+            el.classList.toggle('collapsed');
+            relContainerStates[el.id] = el.classList.contains('collapsed');
+        } 
 
         function getElement(char) {
             if (char === "水" || 水.includes(char)) return "水";
@@ -816,11 +892,21 @@
             return results;
         }
 
-        function renderInvisibleStemRelationships(stems) {
+        function renderInvisibleStemRelationships(stems, headers) {
             const container = document.getElementById('invisibleStemRelContainer');
             if (!container) return; 
 
-            const rels = findInvisibleStemRelationships(stems);
+            let rels = findInvisibleStemRelationships(stems);
+
+            if (isSplitMode && headers) {
+                const groupA = ["時", "日", "月", "年", "元運"];
+                const groupB = ["大運", "流年", "流月", "流日", "流時"];
+                rels = rels.filter(rel => {
+                    const hasA = rel.indices.some(idx => groupA.includes(headers[idx]));
+                    const hasB = rel.indices.some(idx => groupB.includes(headers[idx]));
+                    return !(hasA && hasB);
+                });
+            }
 
             if (rels.length === 0) {
                 container.style.display = 'none';
@@ -891,7 +977,8 @@
                     svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
 
                     const hiddenCol = getRelColor(getElementColor(rel.hiddenStem));
-                    svgHtml += `<text x="${midX}" y="${yBar + 5}" font-size="16" font-weight="700" text-anchor="middle" fill="${hiddenCol}">${rel.hiddenStem}</text>`;
+
+                    svgHtml += `<text class="spawned-stem" x="${midX}" y="${yBar + 5}" font-size="16" font-weight="700" text-anchor="middle" fill="${hiddenCol}" onclick="event.stopPropagation(); triggerArrows(this, '${rel.hiddenStem}')">${rel.hiddenStem}</text>`;
 
                     sortedIndices.forEach(idx => {
                         const x = xCoords[idx];
@@ -1010,11 +1097,21 @@
             return results;
         }
 
-        function renderInvisibleBranchRelationships(branches) {
+        function renderInvisibleBranchRelationships(branches, headers) {
             const container = document.getElementById('invisibleBranchRelContainer');
             if (!container) return;
 
-            const rels = findInvisibleBranchRelationships(branches);
+            let rels = findInvisibleBranchRelationships(branches);
+
+            if (isSplitMode && headers) {
+                const groupA = ["時", "日", "月", "年", "元運"];
+                const groupB = ["大運", "流年", "流月", "流日", "流時"];
+                rels = rels.filter(rel => {
+                    const hasA = rel.indices.some(idx => groupA.includes(headers[idx]));
+                    const hasB = rel.indices.some(idx => groupB.includes(headers[idx]));
+                    return !(hasA && hasB);
+                });
+            }
 
             if (rels.length === 0) {
                 container.style.display = 'none';
@@ -2205,6 +2302,85 @@
             bar.innerHTML = html;
         }
 
+        // BaZi Pian Cai (Indirect Wealth) Mapping: Same Polarity Element Controlled
+        const pianCaiDict = {
+            '甲': '戊', '乙': '己',
+            '丙': '庚', '丁': '辛',
+            '戊': '壬', '己': '癸',
+            '庚': '甲', '辛': '乙',
+            '壬': '丙', '癸': '丁'
+        };
+
+        function triggerArrows(clickedElement, sourceChar) { 
+            const targetChar = pianCaiDict[sourceChar];  
+            if (!targetChar) return;
+
+            const canvas = document.getElementById('arrowCanvas');
+            if (!canvas) return;
+
+            const startRect = clickedElement.getBoundingClientRect();
+            const startX = startRect.left + (startRect.width / 2);
+            const startY = startRect.top + (startRect.height / 2);
+            const startOffsetRadius = clickedElement.classList.contains('main-pillar-stem') ? 35 : 12;
+
+            const possibleTargets = document.querySelectorAll('.main-pillar-stem, #invisibleStemRelContainer text.spawned-stem'); 
+
+            possibleTargets.forEach(target => {
+                if (target === clickedElement) return;
+
+                const endRect = target.getBoundingClientRect();
+                if (endRect.width === 0 || endRect.height === 0) return;
+
+                if (target.textContent.trim() === targetChar) {
+                    const endX = endRect.left + (endRect.width / 2);
+                    const endY = endRect.top + (endRect.height / 2);
+
+                    const dx = endX - startX;
+                    const dy = endY - startY;
+                    const distance = Math.hypot(dx, dy);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    const endOffsetRadius = target.classList.contains('main-pillar-stem') ? 35 : 12; 
+                    
+                    if (distance > (startOffsetRadius + endOffsetRadius)) {
+                        const adjustedStartX = startX + Math.cos(angle) * startOffsetRadius;
+                        const adjustedStartY = startY + Math.sin(angle) * startOffsetRadius;
+
+                        const adjustedEndX = endX - Math.cos(angle) * endOffsetRadius;
+                        const adjustedEndY = endY - Math.sin(angle) * endOffsetRadius;
+
+                        const adjustedDistance = Math.hypot(adjustedEndX - adjustedStartX, adjustedEndY - adjustedStartY);
+
+                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        line.setAttribute("x1", adjustedStartX);
+                        line.setAttribute("y1", adjustedStartY);
+                        line.setAttribute("x2", adjustedEndX);
+                        line.setAttribute("y2", adjustedEndY);
+                        line.setAttribute("stroke", "orange");
+                        line.setAttribute("stroke-width", "2.5");
+                        line.setAttribute("marker-end", "url(#arrowhead)");
+                        
+                        line.style.strokeDasharray = adjustedDistance;
+                        line.style.strokeDashoffset = adjustedDistance;
+                        
+                        canvas.appendChild(line);
+                        
+                        line.animate([
+                            { strokeDashoffset: adjustedDistance },
+                            { strokeDashoffset: 0 }
+                        ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+
+                        line.animate([
+                            { opacity: 1 },
+                            { opacity: 0 }
+                        ], { duration: 500, delay: 1500, easing: 'ease-out', fill: 'forwards' });
+                        
+                        setTimeout(() => line.remove(), 2100);
+                    }
+                }
+            });
+        } 
+
         function renderLiushiBar() {
             const bar = document.getElementById('liushiBar');
             if (!bar) return;
@@ -2241,8 +2417,16 @@
         function renderGrid() {
             if (!currentBaziData) return;
 
-            const { A, B, C, D, E, F, G, H } = currentBaziData;
-            const hasYuanyun = selectedYuanyun !== null;
+            // Change 'const' to 'let' so we can modify G and H
+            let { A, B, C, D, E, F, G, H } = currentBaziData; 
+
+            // If disabled, clear the Hour Pillar variables
+            if (isTimeDisabled) {
+                G = "";
+                H = "";
+            }
+
+            const hasYuanyun = selectedYuanyun !== null; 
             const hasDayun = selectedDayun !== null;
             const hasLiunian = selectedLiunian !== null;
             const hasLiuyue = selectedLiuyue !== null;
@@ -2377,7 +2561,7 @@
                 if (idx === liuriColIdx) extra = ' cursor:pointer; border: 2px solid #28a745;';
                 if (idx === liushiColIdx) extra = ' cursor:pointer; border: 2px solid #17a2b8;';
                 return `color:${col}; background-color:${bg};${extra}`;
-            }
+            } 
 
             let html = '';
 
@@ -2416,22 +2600,16 @@
             });
 
             // Row 3: Stem Relationship Container
-            html += `<div class="bazi-rel-container" id="stemRelContainer" style="grid-column: span ${colsCount}"></div>`;
+            html += `<div class="bazi-rel-container${relContainerStates['stemRelContainer'] ? ' collapsed' : ''}" id="stemRelContainer" style="grid-column: span ${colsCount}" onclick="toggleRelContainer(event, this)"></div>`;
 
             // Row 3.5: Invisible Heavenly Stem Relationship Container
-            html += `<div class="bazi-rel-container" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}"></div>`;
+            html += `<div class="bazi-rel-container${relContainerStates['invisibleStemRelContainer'] ? ' collapsed' : ''}" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}" onclick="toggleRelContainer(event, this)"></div>`; 
 
-            // Row 4: Stem Squares
+            // Row 4: Stem Squares (ONLY triggers arrows without removing the column)
             stems.forEach((char, idx) => {
-                let clickAttr = '';
-                if (idx === yuanyunColIdx) clickAttr = ' onclick="removeYuanyun()"';
-                if (idx === dayunColIdx) clickAttr = ' onclick="removeDayun()"';
-                if (idx === liunianColIdx) clickAttr = ' onclick="removeLiunian()"';
-                if (idx === liuyueColIdx) clickAttr = ' onclick="removeLiuyue()"';
-                if (idx === liuriColIdx) clickAttr = ' onclick="removeLiuri()"';
-                if (idx === liushiColIdx) clickAttr = ' onclick="removeLiushi()"';
-                html += `<div class="bazi-square" style="${getSquareStyle(idx, char)}"${clickAttr}>${char}</div>`;
-            });
+                let clickHandler = `triggerArrows(this, '${char}')`;
+                html += `<div class="bazi-square main-pillar-stem" style="${getSquareStyle(idx, char)}" onclick="${clickHandler}">${char}</div>`;
+            }); 
 
             // Row 5: Branch Squares
             branches.forEach((char, idx) => {
@@ -2446,10 +2624,10 @@
             });
 
             // Row 6: Invisible Branch Relationship Container
-            html += `<div class="bazi-rel-container" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}"></div>`;
+            html += `<div class="bazi-rel-container${relContainerStates['invisibleBranchRelContainer'] ? ' collapsed' : ''}" id="invisibleBranchRelContainer" style="grid-column: span ${colsCount}" onclick="toggleRelContainer(event, this)"></div>`;
 
             // Row 7: Branch Relationship Container
-            html += `<div class="bazi-rel-container" id="relContainer" style="grid-column: span ${colsCount}"></div>`;
+            html += `<div class="bazi-rel-container${relContainerStates['relContainer'] ? ' collapsed' : ''}" id="relContainer" style="grid-column: span ${colsCount}" onclick="toggleRelContainer(event, this)"></div>`; 
 
             // Row 8: 12 Life Stages vs Day Master
             lifeStagesDM.forEach((ls, idx) => {
@@ -2541,8 +2719,8 @@
             });
 
             renderStemRelationships(stems);
-            renderInvisibleStemRelationships(stems);
-            renderInvisibleBranchRelationships(branches);
+            renderInvisibleStemRelationships(stems, headers);
+            renderInvisibleBranchRelationships(branches, headers);
             renderRelationships(branches);
         }
 
@@ -2552,6 +2730,24 @@
             const daySelect = document.getElementById('daySelect');
             const hourSelect = document.getElementById('hourSelect');
             const sexSelect = document.getElementById('sexSelect');
+            const splitBtn = document.getElementById('splitBtn'); 
+
+            disableTimeBtn.addEventListener('click', () => {
+                isTimeDisabled = !isTimeDisabled;
+                disableTimeBtn.textContent = isTimeDisabled ? 'Enable Time' : 'Disable Time';
+                
+                // Optional: Add a visual highlight to the button when time is disabled
+                if (isTimeDisabled) {
+                    disableTimeBtn.style.backgroundColor = 'var(--card-hover)';
+                    disableTimeBtn.style.borderColor = 'gray'; 
+                } else {
+                    disableTimeBtn.style.backgroundColor = '';
+                    disableTimeBtn.style.borderColor = '';
+                }
+                
+                renderGrid();
+            });
+            
             const yuanyunBtn = document.getElementById('yuanyunBtn');
             const dayunBtn = document.getElementById('dayunBtn');
             const liunianBtn = document.getElementById('liunianBtn');
@@ -2583,6 +2779,12 @@
                 const currentTheme = document.body.getAttribute('data-theme') || 'light';
                 const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
                 setTheme(nextTheme);
+            });
+
+            splitBtn.addEventListener('click', () => {
+                isSplitMode = !isSplitMode;
+                splitBtn.textContent = isSplitMode ? 'Combine' : 'Split';
+                renderGrid();
             });
 
             nowBtn.addEventListener('click', selectNow);
@@ -2704,60 +2906,85 @@
             function updateDays(targetDay) {
                 const year = parseInt(yearSelect.value, 10);
                 const month = parseInt(monthSelect.value, 10);
-                const selectedDay = targetDay || parseInt(daySelect.value, 10) || 1;
-
                 const daysInMonth = new Date(year, month, 0).getDate();
+
+                const currentDay = targetDay || parseInt(daySelect.value, 10) || currentDate;
 
                 daySelect.innerHTML = '';
                 for (let d = 1; d <= daysInMonth; d++) {
                     let opt = document.createElement('option');
                     opt.value = d;
                     opt.textContent = d;
+                    if (d === currentDay || (d === daysInMonth && currentDay > daysInMonth)) {
+                        opt.selected = true;
+                    }
                     daySelect.appendChild(opt);
                 }
-
-                daySelect.value = selectedDay <= daysInMonth ? selectedDay : daysInMonth;
-                calculate();
             }
+
+            yearSelect.addEventListener('change', () => { updateDays(); calculate(); });
+            monthSelect.addEventListener('change', () => { updateDays(); calculate(); });
+            daySelect.addEventListener('change', calculate);
+            hourSelect.addEventListener('change', calculate);
+            sexSelect.addEventListener('change', calculate);
 
             yuanyunBtn.addEventListener('click', () => {
                 yuanyunBarVisible = !yuanyunBarVisible;
+                if (!yuanyunBarVisible) {
+                    selectedYuanyun = null;
+                    renderGrid();
+                }
                 renderYuanyunBar();
             });
 
             dayunBtn.addEventListener('click', () => {
                 dayunBarVisible = !dayunBarVisible;
-                renderDayunBar();
+                if (!dayunBarVisible) {
+                    removeDayun();
+                } else {
+                    renderDayunBar();
+                }
             });
 
             liunianBtn.addEventListener('click', () => {
                 liunianBarVisible = !liunianBarVisible;
-                renderLiunianBar();
+                if (!liunianBarVisible) {
+                    removeLiunian();
+                } else {
+                    renderLiunianBar();
+                }
             });
 
             liuyueBtn.addEventListener('click', () => {
                 liuyueBarVisible = !liuyueBarVisible;
-                renderLiuyueBar();
+                if (!liuyueBarVisible) {
+                    removeLiuyue();
+                } else {
+                    renderLiuyueBar();
+                }
             });
 
             liuriBtn.addEventListener('click', () => {
                 liuriBarVisible = !liuriBarVisible;
-                renderLiuriBar();
+                if (!liuriBarVisible) {
+                    removeLiuri();
+                } else {
+                    renderLiuriBar();
+                }
             });
 
             liushiBtn.addEventListener('click', () => {
                 liushiBarVisible = !liushiBarVisible;
-                renderLiushiBar();
+                if (!liushiBarVisible) {
+                    removeLiushi();
+                } else {
+                    renderLiushiBar();
+                }
             });
 
-            yearSelect.addEventListener('change', () => updateDays());
-            monthSelect.addEventListener('change', () => updateDays());
-            daySelect.addEventListener('change', calculate);
-            hourSelect.addEventListener('change', calculate);
-            sexSelect.addEventListener('change', calculate);
-
             updateDays(currentDate);
-        }); // lol 
+            calculate();
+        }); // good ok ! 
     </script>
 </body>
-</html>   
+</html> 
