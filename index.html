@@ -32,6 +32,7 @@
             --sel-liuri-bg: #e8f8f0;
             --sel-liushi-bg: #e0f7fa;
             --sel-yuanyun-bg: #fff0f5;
+            --sel-minggong-bg: #fffbe6; /* Warm gold/yellow tint */
         }
 
         [data-theme="dark"] {
@@ -55,6 +56,7 @@
             --sel-liuri-bg: #0a3a18;
             --sel-liushi-bg: #00363d;
             --sel-yuanyun-bg: #4a0033;
+            --sel-minggong-bg: #3d3200; /* Dark gold tint */ 
         }
 
         body {
@@ -98,6 +100,10 @@
         .btn-theme {
             font-size: 14px;
             padding: 2px 8px;
+        }
+        .dayun-card.selected-minggong {
+            border-color: #d4ac0d; /* Distinct golden border */
+            background-color: var(--sel-minggong-bg);
         }
 
         /* Bazi Grid Components */
@@ -317,7 +323,41 @@
             pointer-events: none;
             z-index: 9999;
         } 
-    </style>
+
+        #invisibleBranchRelContainer text.spawned-branch {
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .bar-label-vertical {
+            /* Pin flush to the left edge inside the container border */
+            position: sticky;
+            left: -12px;
+            margin: -10px 6px -10px -12px; /* Pull flush over container padding */
+            padding: 10px 12px;            /* Preserve inner alignment */
+            z-index: 10;
+            background-color: var(--container-bg); /* Match container background */
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.1;
+            border-right: 2px solid var(--border-color);
+            color: var(--sub-text-color);
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        /* Stem tag outline for Ming Gong */
+        .stem-tag.minggong,
+        .bazi-extra-pillar.minggong {
+            border: 2px solid #d4ac0d; /* Golden outline matching Ming Gong theme */
+            background-color: var(--sel-minggong-bg);
+        } 
+    </style> 
 </head>
 <body>
 
@@ -333,7 +373,8 @@
             <option value="1">女</option>
         </select> 命
         <button id="disableTimeBtn" class="btn-dayun">Disable Time</button> 
-        <button id="splitBtn" class="btn-dayun">Split</button>
+        <button id="splitBtn" class="btn-dayun">Combine</button>
+        <button id="minggongBtn" class="btn-dayun">命宮</button>
         <button id="yuanyunBtn" class="btn-dayun">元運</button>
         <button id="dayunBtn" class="btn-dayun">大運</button>
         <button id="liunianBtn" class="btn-dayun" style="display: none;">流年</button>
@@ -341,6 +382,9 @@
         <button id="liuriBtn" class="btn-dayun" style="display: none;">流日</button>
         <button id="liushiBtn" class="btn-dayun" style="display: none;">流時</button>
     </div>
+
+    <!-- Scrollable 命宮 List -->
+    <div class="dayun-scroll-container" id="minggongBar"></div>
 
     <!-- Scrollable 元運 List -->
     <div class="dayun-scroll-container" id="yuanyunBar"></div>
@@ -364,8 +408,14 @@
     <div class="bazi-container" id="baziGrid"></div>
     <svg id="arrowCanvas">
         <defs>
-            <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff4757"/>
+            <marker id="arrowhead-piancai" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="orange"/>
+            </marker>
+            <marker id="arrowhead-qisha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#adff2f"/>
+            </marker>
+            <marker id="arrowhead-chong" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="orange"/>
             </marker>
         </defs>
     </svg>
@@ -495,6 +545,72 @@
             "寅": "巳", "巳": "申", "申": "寅"
         };
 
+        // Toggle state for 命宮
+        let isMinggongActive = false;
+
+        // 1. Program Data Dictionaries
+        const 程式 = {
+        "子": { "子": "巳", "丑": "辰", "寅": "卯", "卯": "寅", "辰": "丑", "巳": "子", "午": "亥", "未": "戌", "申": "酉", "酉": "申", "戌": "未", "亥": "午" },
+        "丑": { "子": "辰", "丑": "卯", "寅": "寅", "卯": "丑", "辰": "子", "巳": "亥", "午": "戌", "未": "酉", "申": "申", "酉": "未", "戌": "午", "亥": "巳" },
+        "寅": { "子": "卯", "丑": "寅", "寅": "丑", "卯": "子", "辰": "亥", "巳": "戌", "午": "酉", "未": "申", "申": "未", "酉": "午", "戌": "巳", "亥": "辰" },
+        "卯": { "子": "寅", "丑": "丑", "寅": "子", "卯": "亥", "辰": "戌", "巳": "酉", "午": "申", "未": "未", "申": "午", "酉": "巳", "戌": "辰", "亥": "卯" },
+        "辰": { "子": "丑", "丑": "子", "寅": "亥", "卯": "戌", "辰": "酉", "巳": "申", "午": "未", "未": "午", "申": "巳", "酉": "辰", "戌": "卯", "亥": "寅" },
+        "巳": { "子": "子", "丑": "亥", "寅": "戌", "卯": "酉", "辰": "申", "巳": "未", "午": "午", "未": "巳", "申": "辰", "酉": "卯", "戌": "寅", "亥": "丑" },
+        "午": { "子": "亥", "丑": "戌", "寅": "酉", "卯": "申", "辰": "未", "巳": "午", "午": "巳", "未": "辰", "申": "卯", "酉": "寅", "戌": "丑", "亥": "子" },
+        "未": { "子": "戌", "丑": "酉", "寅": "申", "卯": "未", "辰": "午", "巳": "巳", "午": "辰", "未": "卯", "申": "寅", "酉": "丑", "戌": "子", "亥": "亥" },
+        "申": { "子": "酉", "丑": "申", "寅": "未", "卯": "午", "辰": "巳", "巳": "辰", "午": "卯", "未": "寅", "申": "丑", "酉": "子", "戌": "亥", "亥": "戌" },
+        "酉": { "子": "申", "丑": "未", "寅": "午", "卯": "巳", "辰": "辰", "巳": "卯", "午": "寅", "未": "丑", "申": "子", "酉": "亥", "戌": "戌", "亥": "酉" },
+        "戌": { "子": "未", "丑": "午", "寅": "巳", "卯": "辰", "辰": "卯", "巳": "寅", "午": "丑", "未": "子", "申": "亥", "酉": "戌", "戌": "酉", "亥": "申" },
+        "亥": { "子": "午", "丑": "巳", "寅": "辰", "卯": "卯", "辰": "寅", "巳": "丑", "午": "子", "未": "亥", "申": "戌", "酉": "酉", "戌": "申", "亥": "未" }
+        };
+
+        const 五虎遁歌訣 = {
+        "甲": { "寅": "丙", "卯": "丁", "辰": "戊", "巳": "己", "午": "庚", "未": "辛", "申": "壬", "酉": "癸", "戌": "甲", "亥": "乙", "子": "丙", "丑": "丁" },
+        "乙": { "寅": "戊", "卯": "己", "辰": "庚", "巳": "辛", "午": "壬", "未": "癸", "申": "甲", "酉": "乙", "戌": "丙", "亥": "丁", "子": "戊", "丑": "己" },
+        "丙": { "寅": "庚", "卯": "辛", "辰": "壬", "巳": "癸", "午": "甲", "未": "乙", "申": "丙", "酉": "丁", "戌": "戊", "亥": "己", "子": "庚", "丑": "辛" },
+        "丁": { "寅": "壬", "卯": "癸", "辰": "甲", "巳": "乙", "午": "丙", "未": "丁", "申": "戊", "酉": "己", "戌": "庚", "亥": "辛", "子": "壬", "丑": "癸" },
+        "戊": { "寅": "甲", "卯": "乙", "辰": "丙", "巳": "丁", "午": "戊", "未": "己", "申": "庚", "酉": "辛", "戌": "壬", "亥": "癸", "子": "甲", "丑": "乙" },
+        "己": { "寅": "丙", "卯": "丁", "辰": "戊", "巳": "己", "午": "庚", "未": "辛", "申": "壬", "酉": "癸", "戌": "甲", "亥": "乙", "子": "丙", "丑": "丁" },
+        "庚": { "寅": "戊", "卯": "己", "辰": "庚", "巳": "辛", "午": "壬", "未": "癸", "申": "甲", "酉": "乙", "戌": "丙", "亥": "丁", "子": "戊", "丑": "己" },
+        "辛": { "寅": "庚", "卯": "辛", "辰": "壬", "巳": "癸", "午": "甲", "未": "乙", "申": "丙", "酉": "丁", "戌": "戊", "亥": "己", "子": "庚", "丑": "辛" },
+        "壬": { "寅": "壬", "卯": "癸", "辰": "甲", "巳": "乙", "午": "丙", "未": "丁", "申": "戊", "酉": "己", "戌": "庚", "亥": "辛", "子": "壬", "丑": "癸" },
+        "癸": { "寅": "甲", "卯": "乙", "辰": "丙", "巳": "丁", "午": "戊", "未": "己", "申": "庚", "酉": "辛", "戌": "壬", "亥": "癸", "子": "甲", "丑": "乙" }
+        };
+
+        function calculateMinggong() {  
+            if (!currentBaziData) return null;
+
+            const bazi = currentBaziData.bazi || [
+                currentBaziData.A, currentBaziData.B, // Year Stem, Branch
+                currentBaziData.C, currentBaziData.D, // Month Stem, Branch
+                currentBaziData.E, currentBaziData.F, // Day Stem, Branch
+                currentBaziData.G, currentBaziData.H  // Hour Stem, Branch
+            ];
+
+            const yearStem = bazi[0];
+            const monthBranch = bazi[3];
+            const hourBranch = bazi[7];
+
+            // If time is disabled or hourBranch is missing, return null
+            if (!yearStem || !monthBranch || !hourBranch) {
+                return null;
+            }
+
+            const monthIdx = deizi_order.indexOf(monthBranch);
+            const hourIdx = deizi_order.indexOf(hourBranch);
+
+            if (monthIdx === -1 || hourIdx === -1) return null;
+
+            // Formula: (5 - monthIdx - hourIdx + 24) % 12
+            const branchIdx = (5 - monthIdx - hourIdx + 24) % 12;
+            const Y = deizi_order[branchIdx];
+            const X = 五虎遁歌訣[yearStem] ? 五虎遁歌訣[yearStem][Y] : null;
+
+            if (!X || !Y) return null;
+
+            return { stem: X, branch: Y };
+        }
+
         function isDarkMode() {
             return document.body.getAttribute('data-theme') === 'dark';
         }
@@ -513,13 +629,14 @@
         let selectedLiuyue = null;
         let selectedLiuri = null;
         let selectedLiushi = null;
+        let minggongBarVisible  = false;
         let yuanyunBarVisible = false;
         let dayunBarVisible = false; 
         let liunianBarVisible = false;
         let liuyueBarVisible = false;
         let liuriBarVisible = false;
         let liushiBarVisible = false;
-        let isSplitMode = false;
+        let isSplitMode = true; 
         // State tracker for collapsible relationship containers (true = collapsed initially)
         let relContainerStates = {
             'stemRelContainer': true,
@@ -599,7 +716,7 @@
         function calculateTenGod(targetChar, dayMasterChar) {
             const targetEl = getElement(targetChar);
             const dayMasterEl = getElement(dayMasterChar);
-            if (!targetEl || !dayMasterEl) return "";
+            if (!targetEl || !dayMasterEl) return ""; 
 
             const targetElIdx = five_elements.indexOf(targetEl);
             const relType = relations[dayMasterEl][targetElIdx];
@@ -978,8 +1095,9 @@
 
                     const hiddenCol = getRelColor(getElementColor(rel.hiddenStem));
 
-                    svgHtml += `<text class="spawned-stem" x="${midX}" y="${yBar + 5}" font-size="16" font-weight="700" text-anchor="middle" fill="${hiddenCol}" onclick="event.stopPropagation(); triggerArrows(this, '${rel.hiddenStem}')">${rel.hiddenStem}</text>`;
-
+                    // Replace line ~851 in renderInvisibleStemRelationships:
+                    svgHtml += `<text class="spawned-stem" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${hiddenCol}" onclick="event.stopPropagation(); triggerArrows(this, '${rel.hiddenStem}')">${rel.hiddenStem}</text>`;
+                    
                     sortedIndices.forEach(idx => {
                         const x = xCoords[idx];
                         svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
@@ -1153,8 +1271,8 @@
 
                 svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="2" />`;
 
-                svgHtml += `<text x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}">${rel.hiddenBranch}</text>`;
-            });
+                svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}')">${rel.hiddenBranch}</text>`;
+            }); 
 
             svgHtml += `</svg>`;
             container.innerHTML = svgHtml;
@@ -1575,12 +1693,12 @@
             var sex = parseInt(document.getElementById('sexSelect').value, 10);
 
             const tStart = times[dayunIdx];
-            const startAns = p.GetInfo(sex, tStart[0], tStart[1], tStart[2], tStart[3], 0, 0);
+            let curYear = tStart[0];
+            const startAns = p.GetInfo(sex, curYear, 6, 1, 12, 0, 0);
             if (!startAns || !startAns.bazi) return [];
 
             let curStem = startAns.bazi[0];
             let curBranch = startAns.bazi[1];
-            let curYear = tStart[0];
 
             let endStem = null, endBranch = null;
             if (dayunIdx < times.length - 1 && times[dayunIdx + 1]) {
@@ -2144,7 +2262,59 @@
             });
         } 
 
-        function renderYuanyunBar() {
+        function renderMinggongBar() {
+            const bar = document.getElementById('minggongBar');
+            if (!bar) return;
+
+            if (!minggongBarVisible) {
+                bar.style.display = 'none';
+                bar.innerHTML = '';
+                return;
+            }
+
+            bar.style.display = 'flex';
+            bar.innerHTML = '';
+
+            const mg = calculateMinggong();
+            if (!mg) {
+                bar.innerHTML = '<div style="padding: 6px; color: var(--sub-text-color);">無命宮資料</div>';
+                return;
+            }
+
+            // Card element
+            const card = document.createElement('div');
+            card.className = `dayun-card ${isMinggongActive ? 'selected-minggong' : ''}`; 
+            card.onclick = () => {
+                isMinggongActive = !isMinggongActive;
+                renderMinggongBar();
+                renderGrid();
+            };
+
+            const header = document.createElement('div');
+            header.className = 'dayun-year';
+            header.innerText = '命宮';
+
+            // Stem box (X)
+            const stemSquare = document.createElement('div');
+            stemSquare.className = 'dayun-square';
+            stemSquare.style.color = getElementColor(mg.stem);
+            stemSquare.style.backgroundColor = getBgColor(mg.stem);
+            stemSquare.innerText = mg.stem;
+
+            // Branch box (Y)
+            const branchSquare = document.createElement('div');
+            branchSquare.className = 'dayun-square';
+            branchSquare.style.color = getElementColor(mg.branch);
+            branchSquare.style.backgroundColor = getBgColor(mg.branch);
+            branchSquare.innerText = mg.branch;
+
+            card.appendChild(header);
+            card.appendChild(stemSquare);
+            card.appendChild(branchSquare);
+            bar.appendChild(card);
+        }
+
+        function renderYuanyunBar() { 
             const bar = document.getElementById('yuanyunBar');
             if (!bar) return;
 
@@ -2155,8 +2325,10 @@
             }
 
             const filteredOptions = getFilteredYuanYunOptions();
+            
+            // Add vertical sign
+            let html = `<div class="bar-label-vertical">元<br>運</div>`;
 
-            let html = '';
             filteredOptions.forEach((item) => {
                 const isSelected = selectedYuanyun && selectedYuanyun.year === item.year;
                 const stemCol = getElementColor(item.stem);
@@ -2173,7 +2345,7 @@
                 `;
             });
             bar.innerHTML = html;
-        } 
+        }
 
         function renderDayunBar() {
             const bar = document.getElementById('dayunBar');
@@ -2185,12 +2357,14 @@
                 return;
             }
 
-            let html = '';
+            // Add vertical sign
+            let html = `<div class="bar-label-vertical">大<br>運</div>`;
+
             currentBaziData.bigList.forEach((item, idx) => {
                 const isSelected = selectedDayun && selectedDayun.index === idx;
                 const stemCol = getElementColor(item.stem);
                 const stemBg = getBgColor(item.stem);
-                const branchCol = getElementColor(item.branch);
+                const branchCol = getElementColor(item.branch); 
                 const branchBg = getBgColor(item.branch);
 
                 html += `
@@ -2217,7 +2391,10 @@
             }
 
             const list = getLiunianList(selectedDayun.index);
-            let html = '';
+            
+            // Add vertical sign
+            let html = `<div class="bar-label-vertical">流<br>年</div>`;
+
             list.forEach((item, idx) => {
                 const isSelected = selectedLiunian && selectedLiunian.index === idx;
                 const stemCol = getElementColor(item.stem);
@@ -2249,7 +2426,10 @@
             }
 
             const list = getLiuyueList(selectedDayun.index, selectedLiunian.index);
-            let html = '';
+            
+            // Add vertical sign
+            let html = `<div class="bar-label-vertical">流<br>月</div>`;
+
             list.forEach((item, idx) => {
                 const isSelected = selectedLiuyue && selectedLiuyue.index === idx;
                 const stemCol = getElementColor(item.stem);
@@ -2282,7 +2462,10 @@
             }
 
             const list = getLiuriList(selectedDayun.index, selectedLiunian.index, selectedLiuyue.index);
-            let html = '';
+            
+            // Add vertical sign
+            let html = `<div class="bar-label-vertical">流<br>日</div>`;
+
             list.forEach((item, idx) => {
                 const isSelected = selectedLiuri && selectedLiuri.index === idx;
                 const stemCol = getElementColor(item.stem);
@@ -2302,6 +2485,42 @@
             bar.innerHTML = html;
         }
 
+        function renderLiushiBar() {
+            const bar = document.getElementById('liushiBar');
+            if (!bar) return;
+
+            const shouldShow = liushiBarVisible && selectedDayun !== null && selectedLiunian !== null && selectedLiuyue !== null && selectedLiuri !== null;
+            bar.style.display = shouldShow ? 'flex' : 'none';
+
+            if (!shouldShow) {
+                bar.innerHTML = '';
+                return;
+            }
+
+            const list = getLiushiList(selectedDayun.index, selectedLiunian.index, selectedLiuyue.index, selectedLiuri.index);
+            
+            // Add vertical sign
+            let html = `<div class="bar-label-vertical">流<br>時</div>`;
+
+            list.forEach((item, idx) => {
+                const isSelected = selectedLiushi && selectedLiushi.index === idx;
+                const stemCol = getElementColor(item.stem);
+                const stemBg = getBgColor(item.stem);
+                const branchCol = getElementColor(item.branch);
+                const branchBg = getBgColor(item.branch);
+
+                html += `
+                    <div class="dayun-card${isSelected ? ' selected-liushi' : ''}" onclick="selectLiushi(${idx})">
+                        <div class="dayun-year">${item.date || ''}</div>
+                        <div class="dayun-square" style="color:${stemCol}; background-color:${stemBg}">${item.stem}</div>
+                        <div class="dayun-square" style="color:${branchCol}; background-color:${branchBg}">${item.branch}</div>
+                        <div class="dayun-time">${item.timeStr}</div>
+                    </div>
+                `;
+            });
+            bar.innerHTML = html;
+        }
+
         // BaZi Pian Cai (Indirect Wealth) Mapping: Same Polarity Element Controlled
         const pianCaiDict = {
             '甲': '戊', '乙': '己',
@@ -2311,75 +2530,201 @@
             '壬': '丙', '癸': '丁'
         };
 
-        function triggerArrows(clickedElement, sourceChar) { 
-            const targetChar = pianCaiDict[sourceChar];  
-            if (!targetChar) return;
+        // BaZi Qi Sha (Seven Killings) Mapping: Same Polarity Element Controlling
+        const qiShaDict = {
+            '甲': '庚', '乙': '辛',
+            '丙': '壬', '丁': '癸',
+            '戊': '甲', '己': '乙',
+            '庚': '丙', '辛': '丁',
+            '壬': '戊', '癸': '己'
+        };
 
+        function drawXAnimation(element) {
             const canvas = document.getElementById('arrowCanvas');
             if (!canvas) return;
 
-            const startRect = clickedElement.getBoundingClientRect();
+            const rect = element.getBoundingClientRect();
+            const cx = rect.left + (rect.width / 2);
+            const cy = rect.top + (rect.height / 2);
+            const size = element.classList.contains('main-pillar-stem') ? 20 : 10;
+
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+            const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line1.setAttribute("x1", cx - size);
+            line1.setAttribute("y1", cy - size);
+            line1.setAttribute("x2", cx + size);
+            line1.setAttribute("y2", cy + size);
+            line1.setAttribute("stroke", "#ff4d4f");
+            line1.setAttribute("stroke-width", "3.5");
+            line1.setAttribute("stroke-linecap", "round");
+
+            const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line2.setAttribute("x1", cx + size);
+            line2.setAttribute("y1", cy - size);
+            line2.setAttribute("x2", cx - size);
+            line2.setAttribute("y2", cy + size);
+            line2.setAttribute("stroke", "#ff4d4f");
+            line2.setAttribute("stroke-width", "3.5");
+            line2.setAttribute("stroke-linecap", "round");
+
+            g.appendChild(line1);
+            g.appendChild(line2);
+            canvas.appendChild(g);
+
+            g.style.transformOrigin = `${cx}px ${cy}px`;
+            g.animate([
+                { transform: 'scale(0.3) rotate(-10deg)', opacity: 0 },
+                { transform: 'scale(1.1) rotate(0deg)', opacity: 1, offset: 0.3 },
+                { transform: 'scale(1.0) rotate(0deg)', opacity: 1, offset: 0.7 },
+                { transform: 'scale(0.9) rotate(0deg)', opacity: 0 }
+            ], {
+                duration: 1200,
+                easing: 'ease-out',
+                fill: 'forwards'
+            });
+
+            setTimeout(() => g.remove(), 1250);
+        }
+
+        // BaZi Earthly Branch Six Clashes (地支六沖)
+        const chongDict = {
+            '子': '午', '午': '子',
+            '丑': '未', '未': '丑',
+            '寅': '申', '申': '寅',
+            '卯': '酉', '酉': '卯',
+            '辰': '戌', '戌': '辰',
+            '巳': '亥', '亥': '巳'
+        };
+
+        function createArrow(fromElem, toElem, color, markerId, isBiDirectional = false) {
+            const canvas = document.getElementById('arrowCanvas');
+            if (!canvas) return false;
+
+            const startRect = fromElem.getBoundingClientRect();
+            const endRect = toElem.getBoundingClientRect();
+            if (startRect.width === 0 || startRect.height === 0 || endRect.width === 0 || endRect.height === 0) return false;
+
             const startX = startRect.left + (startRect.width / 2);
             const startY = startRect.top + (startRect.height / 2);
-            const startOffsetRadius = clickedElement.classList.contains('main-pillar-stem') ? 35 : 12;
+            const endX = endRect.left + (endRect.width / 2);
+            const endY = endRect.top + (endRect.height / 2);
 
-            const possibleTargets = document.querySelectorAll('.main-pillar-stem, #invisibleStemRelContainer text.spawned-stem'); 
+            const isMainBranch = fromElem.classList.contains('main-pillar-branch') || fromElem.classList.contains('main-pillar-stem');
+            const startOffsetRadius = isMainBranch ? 35 : 12;
+            const endOffsetRadius = toElem.classList.contains('main-pillar-branch') || toElem.classList.contains('main-pillar-stem') ? 35 : 12;
+
+            const dx = endX - startX;
+            const dy = endY - startY;
+            const distance = Math.hypot(dx, dy);
+            const angle = Math.atan2(dy, dx);
+
+            if (distance <= (startOffsetRadius + endOffsetRadius)) return false;
+
+            const adjustedStartX = startX + Math.cos(angle) * startOffsetRadius;
+            const adjustedStartY = startY + Math.sin(angle) * startOffsetRadius;
+            const adjustedEndX = endX - Math.cos(angle) * endOffsetRadius;
+            const adjustedEndY = endY - Math.sin(angle) * endOffsetRadius;
+
+            const adjustedDistance = Math.hypot(adjustedEndX - adjustedStartX, adjustedEndY - adjustedStartY);
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", adjustedStartX);
+            line.setAttribute("y1", adjustedStartY);
+            line.setAttribute("x2", adjustedEndX);
+            line.setAttribute("y2", adjustedEndY);
+            line.setAttribute("stroke", color);
+            line.setAttribute("stroke-width", "2.5");
+            line.setAttribute("marker-end", `url(#${markerId})`);
+
+            // If bidirectional, add marker to the start of the line as well
+            if (isBiDirectional) {
+                line.setAttribute("marker-start", `url(#${markerId})`);
+            }
+
+            line.style.strokeDasharray = adjustedDistance;
+            line.style.strokeDashoffset = adjustedDistance;
+
+            canvas.appendChild(line);
+
+            line.animate([
+                { strokeDashoffset: adjustedDistance },
+                { strokeDashoffset: 0 }
+            ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+
+            line.animate([
+                { opacity: 1 },
+                { opacity: 0 }
+            ], { duration: 500, delay: 1500, easing: 'ease-out', fill: 'forwards' });
+
+            setTimeout(() => line.remove(), 2100);
+            return true;
+        }
+
+        function triggerDizhiArrows(clickedElement, sourceChar) { 
+            const canvas = document.getElementById('arrowCanvas');
+            if (!canvas) return;
+
+            const targetChongChar = chongDict[sourceChar];
+            
+            // Select all Earthly Branch elements (main pillars + spawned/time pillars)
+            const possibleTargets = document.querySelectorAll('.main-pillar-branch, #invisibleBranchRelContainer text.spawned-branch, .time-pillar-branch');
+            let arrowsDrawnCount = 0;
 
             possibleTargets.forEach(target => {
                 if (target === clickedElement) return;
 
-                const endRect = target.getBoundingClientRect();
-                if (endRect.width === 0 || endRect.height === 0) return;
+                const targetText = target.textContent.trim();
 
-                if (target.textContent.trim() === targetChar) {
-                    const endX = endRect.left + (endRect.width / 2);
-                    const endY = endRect.top + (endRect.height / 2);
-
-                    const dx = endX - startX;
-                    const dy = endY - startY;
-                    const distance = Math.hypot(dx, dy);
-                    const angle = Math.atan2(dy, dx);
-                    
-                    const endOffsetRadius = target.classList.contains('main-pillar-stem') ? 35 : 12; 
-                    
-                    if (distance > (startOffsetRadius + endOffsetRadius)) {
-                        const adjustedStartX = startX + Math.cos(angle) * startOffsetRadius;
-                        const adjustedStartY = startY + Math.sin(angle) * startOffsetRadius;
-
-                        const adjustedEndX = endX - Math.cos(angle) * endOffsetRadius;
-                        const adjustedEndY = endY - Math.sin(angle) * endOffsetRadius;
-
-                        const adjustedDistance = Math.hypot(adjustedEndX - adjustedStartX, adjustedEndY - adjustedStartY);
-
-                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                        line.setAttribute("x1", adjustedStartX);
-                        line.setAttribute("y1", adjustedStartY);
-                        line.setAttribute("x2", adjustedEndX);
-                        line.setAttribute("y2", adjustedEndY);
-                        line.setAttribute("stroke", "orange");
-                        line.setAttribute("stroke-width", "2.5");
-                        line.setAttribute("marker-end", "url(#arrowhead)");
-                        
-                        line.style.strokeDasharray = adjustedDistance;
-                        line.style.strokeDashoffset = adjustedDistance;
-                        
-                        canvas.appendChild(line);
-                        
-                        line.animate([
-                            { strokeDashoffset: adjustedDistance },
-                            { strokeDashoffset: 0 }
-                        ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
-
-                        line.animate([
-                            { opacity: 1 },
-                            { opacity: 0 }
-                        ], { duration: 500, delay: 1500, easing: 'ease-out', fill: 'forwards' });
-                        
-                        setTimeout(() => line.remove(), 2100);
+                // 沖 (Clash): Draw a bidirectional orange arrow between source and target
+                if (targetChongChar && targetText === targetChongChar) {
+                    if (createArrow(clickedElement, target, "orange", "arrowhead-chong", true)) {
+                        arrowsDrawnCount++;
                     }
                 }
             });
-        } 
+
+            // Draw X animation if no clash partner exists on screen
+            if (arrowsDrawnCount === 0) {
+                drawXAnimation(clickedElement);
+            }
+        }
+
+        function triggerArrows(clickedElement, sourceChar) { 
+            const canvas = document.getElementById('arrowCanvas');
+            if (!canvas) return;
+
+            const targetPianCaiChar = pianCaiDict[sourceChar];
+            const sourceQiShaChar = qiShaDict[sourceChar];
+
+            const possibleTargets = document.querySelectorAll('.main-pillar-stem, #invisibleStemRelContainer text.spawned-stem');
+            let arrowsDrawnCount = 0;
+
+            possibleTargets.forEach(target => {
+                if (target === clickedElement) return;
+
+                const targetText = target.textContent.trim();
+
+                // 1. 偏財: Clicked stem -> 偏財 stem (Orange arrow)
+                if (targetPianCaiChar && targetText === targetPianCaiChar) {
+                    if (createArrow(clickedElement, target, "orange", "arrowhead-piancai")) {
+                        arrowsDrawnCount++;
+                    }
+                }
+
+                // 2. 七殺: 七殺 stem -> Clicked stem (Greenish-Yellow arrow)
+                if (sourceQiShaChar && targetText === sourceQiShaChar) {
+                    if (createArrow(target, clickedElement, "#adff2f", "arrowhead-qisha")) {
+                        arrowsDrawnCount++;
+                    }
+                }
+            });
+
+            // 3. If neither 偏財 nor 七殺 is present on screen, show X animation
+            if (arrowsDrawnCount === 0) {
+                drawXAnimation(clickedElement);
+            }
+        }
 
         function renderLiushiBar() {
             const bar = document.getElementById('liushiBar');
@@ -2415,15 +2760,29 @@
         }
 
         function renderGrid() {
+            // 1. Recalculate and update 命宮 whenever the grid renders
+            renderMinggongBar();
             if (!currentBaziData) return;
 
             // Change 'const' to 'let' so we can modify G and H
-            let { A, B, C, D, E, F, G, H } = currentBaziData; 
+            let { A, B, C, D, E, F, G, H, X, Y } = currentBaziData; 
 
             // If disabled, clear the Hour Pillar variables
             if (isTimeDisabled) {
                 G = "";
                 H = "";
+            }
+
+            // 2. If 命宮 is active, calculate and set X & Y
+            if (isMinggongActive) {
+                const mg = calculateMinggong();
+                if (mg) {
+                    X = mg.stem;
+                    Y = mg.branch;
+                }
+            } else {
+                X = "";
+                Y = ""; 
             }
 
             const hasYuanyun = selectedYuanyun !== null; 
@@ -2434,6 +2793,7 @@
             const hasLiushi = selectedLiushi !== null;
 
             let colsCount = 4;
+            if (isMinggongActive && X && Y) colsCount++; // Increment column count for 命宮
             if (hasYuanyun) colsCount++;
             if (hasDayun) colsCount++;
             if (hasLiunian) colsCount++;
@@ -2472,7 +2832,19 @@
                 { branch: B, dm: E }
             ];
 
-            let nextColIdx = 4;
+            // Prepend 命宮 to index 0 (Leftmost position) if active
+            if (isMinggongActive && X && Y) {
+                headers.unshift("命宮");
+                upperGods.unshift(calculateTenGod(X, E));
+                stems.unshift(X);
+                branches.unshift(Y);
+                lifeStagesDM.unshift(calculateLifeStage(Y, E));
+                lifeStagesSub.unshift(calculateLifeStage(Y, X));
+                hiddenStemsData.unshift({ branch: Y, dm: E });
+            }
+
+            // Dynamic starting index for dynamic columns (Yuanyun, Dayun, etc.)
+            let nextColIdx = stems.length; 
             const yuanyunColIdx = hasYuanyun ? nextColIdx++ : -1;
             const dayunColIdx = hasDayun ? nextColIdx++ : -1;
             const liunianColIdx = hasLiunian ? nextColIdx++ : -1;
@@ -2605,7 +2977,7 @@
             // Row 3.5: Invisible Heavenly Stem Relationship Container
             html += `<div class="bazi-rel-container${relContainerStates['invisibleStemRelContainer'] ? ' collapsed' : ''}" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}" onclick="toggleRelContainer(event, this)"></div>`; 
 
-            // Row 4: Stem Squares (ONLY triggers arrows without removing the column)
+            // Row 4: Stem Squares
             stems.forEach((char, idx) => {
                 let clickHandler = `triggerArrows(this, '${char}')`;
                 html += `<div class="bazi-square main-pillar-stem" style="${getSquareStyle(idx, char)}" onclick="${clickHandler}">${char}</div>`;
@@ -2619,8 +2991,8 @@
                 if (idx === liunianColIdx) clickAttr = ' onclick="removeLiunian()"';
                 if (idx === liuyueColIdx) clickAttr = ' onclick="removeLiuyue()"';
                 if (idx === liuriColIdx) clickAttr = ' onclick="removeLiuri()"';
-                if (idx === liushiColIdx) clickAttr = ' onclick="removeLiushi()"';
-                html += `<div class="bazi-square" style="${getSquareStyle(idx, char)}"${clickAttr}>${char}</div>`;
+                if (idx === liushiColIdx) clickAttr = ' onclick="removeLiushi()"'; 
+                html += `<div class="bazi-square main-pillar-branch" style="${getSquareStyle(idx, char)}"${clickAttr}>${char}</div>`;
             });
 
             // Row 6: Invisible Branch Relationship Container
@@ -2694,7 +3066,7 @@
             hiddenStemsData.forEach((item, idx) => {
                 const el1 = document.getElementById(`rect_h_r1_c${idx}`);
                 const el2 = document.getElementById(`rect_h_r2_c${idx}`);
-                const hStems = deizi_hidden_tenkan[item.branch] || [];
+                const hStems = deizi_hidden_tenkan[item.branch] || [];  
 
                 if (hStems.length === 0) {
                     if (el1) el1.style.visibility = "hidden";
@@ -2722,7 +3094,15 @@
             renderInvisibleStemRelationships(stems, headers);
             renderInvisibleBranchRelationships(branches, headers);
             renderRelationships(branches);
-        }
+
+            document.querySelectorAll('.main-pillar-branch, .time-pillar-branch, text.spawned-branch').forEach(branchElem => {
+                branchElem.onclick = function(event) {
+                    event.stopPropagation();
+                    const branchChar = this.textContent.trim();
+                    triggerDizhiArrows(this, branchChar);
+                };
+            }); 
+        } 
 
         document.addEventListener("DOMContentLoaded", () => {
             const yearSelect = document.getElementById('yearSelect');
@@ -2747,7 +3127,29 @@
                 
                 renderGrid();
             });
-            
+
+            // Bind all input selectors to trigger grid & 命宮 recalculation
+            ['yearSelect', 'monthSelect', 'daySelect', 'hourSelect', 'sexSelect'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', () => {
+                        // Update currentBaziData here via paipan calculation logic
+                        updateBaziData(); 
+                        renderGrid();
+                    });
+                }
+            });
+
+            // Bind 命宮 Toggle Button
+            const minggongBtn = document.getElementById('minggongBtn');
+            if (minggongBtn) {
+                minggongBtn.addEventListener('click', () => {
+                    minggongBarVisible = !minggongBarVisible;
+                    renderMinggongBar();
+                    renderGrid();
+                });
+            }
+
             const yuanyunBtn = document.getElementById('yuanyunBtn');
             const dayunBtn = document.getElementById('dayunBtn');
             const liunianBtn = document.getElementById('liunianBtn');
@@ -2859,6 +3261,7 @@
                     var sex = parseInt(sexSelect.value, 10); 
 
                     var ans = p.GetInfo(sex, yr, mth, dy, hr, 0, 0); 
+                    console.log(ans); 
                     
                     if (ans && ans.bazi && ans.bazi.length >= 8) {
                         const bigList = [];
@@ -2930,61 +3333,37 @@
 
             yuanyunBtn.addEventListener('click', () => {
                 yuanyunBarVisible = !yuanyunBarVisible;
-                if (!yuanyunBarVisible) {
-                    selectedYuanyun = null;
-                    renderGrid();
-                }
-                renderYuanyunBar();
+                renderYuanyunBar(); 
             });
 
             dayunBtn.addEventListener('click', () => {
                 dayunBarVisible = !dayunBarVisible;
-                if (!dayunBarVisible) {
-                    removeDayun();
-                } else {
-                    renderDayunBar();
-                }
+                renderDayunBar();
             });
 
             liunianBtn.addEventListener('click', () => {
                 liunianBarVisible = !liunianBarVisible;
-                if (!liunianBarVisible) {
-                    removeLiunian();
-                } else {
-                    renderLiunianBar();
-                }
+                renderLiunianBar();
             });
 
             liuyueBtn.addEventListener('click', () => {
                 liuyueBarVisible = !liuyueBarVisible;
-                if (!liuyueBarVisible) {
-                    removeLiuyue();
-                } else {
-                    renderLiuyueBar();
-                }
+                renderLiuyueBar();
             });
 
             liuriBtn.addEventListener('click', () => {
                 liuriBarVisible = !liuriBarVisible;
-                if (!liuriBarVisible) {
-                    removeLiuri();
-                } else {
-                    renderLiuriBar();
-                }
+                renderLiuriBar();
             });
 
             liushiBtn.addEventListener('click', () => {
                 liushiBarVisible = !liushiBarVisible;
-                if (!liushiBarVisible) {
-                    removeLiushi();
-                } else {
-                    renderLiushiBar();
-                }
+                renderLiushiBar();
             });
 
             updateDays(currentDate);
             calculate();
-        }); // good ok ! 
+        }); 
     </script>
 </body>
 </html> 
