@@ -8,357 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700;900&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="styles.css">
     <script src="paipan.js" defer></script> 
-    <style>
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #222222;
-            --sub-text-color: #444444;
-            --muted-text-color: #8c8c8c;
-            --border-color: #222222;
-            --card-bg: #ffffff;
-            --card-hover: #eeeeee;
-            --sub-rect-bg: #e0e0e0;
-            --sub-rect-text: #666666;
-            --sub-rect-border: #777777;
-            --container-bg: #f9f9f9;
-            --shadow: rgba(0, 0, 0, 0.05);
-
-            /* Selected card highlight backgrounds */
-            --sel-dayun-bg: #e6f2ff;
-            --sel-liunian-bg: #fef5e7;
-            --sel-liuyue-bg: #f3ebf9;
-            --sel-liuri-bg: #e8f8f0;
-            --sel-liushi-bg: #e0f7fa;
-            --sel-yuanyun-bg: #fff0f5;
-            --sel-minggong-bg: #fffbe6; /* Warm gold/yellow tint */
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --sub-text-color: #aaaaaa;
-            --muted-text-color: #777777;
-            --border-color: #555555;
-            --card-bg: #1e1e1e;
-            --card-hover: #2d2d2d;
-            --sub-rect-bg: #2a2a2a;
-            --sub-rect-text: #aaaaaa;
-            --sub-rect-border: #555555;
-            --container-bg: #181818;
-            --shadow: rgba(0, 0, 0, 0.4);
-
-            /* Selected card highlight backgrounds */
-            --sel-dayun-bg: #003366;
-            --sel-liunian-bg: #4a2800;
-            --sel-liuyue-bg: #321452;
-            --sel-liuri-bg: #0a3a18;
-            --sel-liushi-bg: #00363d;
-            --sel-yuanyun-bg: #4a0033;
-            --sel-minggong-bg: #3d3200; /* Dark gold tint */ 
-        }
-
-        body {
-            font-family: 'Noto Serif SC', "Microsoft YaHei", "SimSun", serif;
-            padding: 12px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.2s, color 0.2s;
-        }
-
-        /* Standard UI Controls (Scaled Smaller) */
-        .controls-bar {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-            font-size: 13px;
-        }
-        .controls-bar select {
-            font-size: 13px;
-            padding: 2px 4px;
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-        }
-        .btn-dayun {
-            font-size: 13px;
-            padding: 3px 8px;
-            cursor: pointer;
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
-            font-family: inherit;
-            user-select: none;
-        }
-        .btn-dayun:hover {
-            background-color: var(--card-hover);
-        }
-        .btn-theme {
-            font-size: 14px;
-            padding: 2px 8px;
-        }
-        .dayun-card.selected-minggong {
-            border-color: #d4ac0d; /* Distinct golden border */
-            background-color: var(--sel-minggong-bg);
-        }
-
-        /* Bazi Grid Components */
-        .bazi-container {
-            display: grid;
-            grid-template-columns: repeat(4, 90px);
-            gap: 8px;
-            margin-top: 18px;
-            align-items: start;
-        }
-        .bazi-header {
-            width: 90px;
-            height: 72px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 72px;
-            font-weight: 200;
-            color: var(--sub-text-color);
-            user-select: none;
-            line-height: 1;
-        }
-        .bazi-rect {
-            width: 90px;
-            min-height: 42px;
-            border: 2px solid var(--border-color);
-            border-radius: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            font-weight: 400;
-            white-space: nowrap;
-            background-color: var(--card-bg);
-            box-shadow: 0 3px 5px var(--shadow);
-            user-select: none;
-            color: var(--text-color);
-            text-align: center;
-            box-sizing: border-box;
-            padding: 3px 0;
-        }
-        .bazi-rect-sub {
-            background-color: var(--sub-rect-bg);
-            color: var(--sub-rect-text);
-            border-color: var(--sub-rect-border);
-        }
-        .bazi-rect-hidden {
-            padding: 4px 0;
-        }
-        .bazi-rel-container {
-            grid-column: span 4;
-            width: 100%;
-            display: none;
-            border: 2px solid var(--border-color);
-            background-color: var(--card-bg);
-            box-shadow: 0 3px 5px var(--shadow);
-            box-sizing: border-box;
-            padding: 4px 0;
-            user-select: none;
-            cursor: pointer; /* Indicates the border is clickable */
-            transition: background-color 0.2s, border-color 0.2s;
-        }
-
-        .bazi-rel-container svg {
-            cursor: default; /* Keeps the regular cursor when hovering over the SVG elements */
-        }
-
-        /* Collapsed state styling */
-        .bazi-rel-container.collapsed {
-            height: 14px;
-            padding: 0;
-            border: none;
-            background-color: transparent;
-            box-shadow: none;
-            position: relative;
-        }
-
-        /* The dotted line effect */
-        .bazi-rel-container.collapsed::before {
-            content: '';
-            position: absolute;
-            top: 5px;
-            left: 0;
-            right: 0;
-            border-top: 3px dotted var(--border-color);
-        }
-
-        /* Hide the SVG when collapsed */
-        .bazi-rel-container.collapsed svg {
-            display: none;
-        } 
-        .hidden-stem-line {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-            gap: 4px;
-            line-height: 1.15;
-        }
-        .stem-char {
-            font-size: 22px;
-            font-weight: 400;
-        }
-        .god-text {
-            font-size: 22px;
-            font-weight: 400;
-            color: var(--text-color);
-        }
-        .bazi-square {
-            width: 90px;
-            height: 90px;
-            border: 2px solid var(--border-color);
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 72px;
-            font-weight: 200;
-            line-height: 1;
-            background-color: var(--card-bg);
-            box-shadow: 0 3px 5px var(--shadow);
-            user-select: none;
-            box-sizing: border-box;
-        } 
-
-        /* Scrollable Horizontal UIs */
-        .dayun-scroll-container {
-            display: none;
-            flex-direction: row;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 10px 12px;
-            margin-top: 15px;
-            max-width: 840px;
-            box-sizing: border-box;
-            border: 3px solid var(--border-color);
-            background-color: var(--container-bg);
-            user-select: none;
-            white-space: nowrap;
-        }
-        .dayun-card { 
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 4px;
-            border: 2px solid transparent;
-            transition: background-color 0.2s, border-color 0.2s;
-        }
-        .dayun-card:hover {
-            background-color: var(--card-hover);
-        }
-        .dayun-card.selected {
-            border-color: #007bff;
-            background-color: var(--sel-dayun-bg);
-        }
-        .dayun-card.selected-yuanyun {
-            border-color: #e83e8c;
-            background-color: var(--sel-yuanyun-bg);
-        }
-        .dayun-card.selected-liunian {
-            border-color: #e67e22;
-            background-color: var(--sel-liunian-bg);
-        }
-        .dayun-card.selected-liuyue {
-            border-color: #6f42c1;
-            background-color: var(--sel-liuyue-bg);
-        }
-        .dayun-card.selected-liuri {
-            border-color: #28a745;
-            background-color: var(--sel-liuri-bg);
-        }
-        .dayun-card.selected-liushi {
-            border-color: #17a2b8;
-            background-color: var(--sel-liushi-bg);
-        }
-        .dayun-year {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--sub-text-color);
-            min-height: 22px;
-        }
-        .dayun-time {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--muted-text-color);
-            margin-top: 1px;
-        }
-        .dayun-square {
-            width: 55px;
-            height: 55px;
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            font-weight: 400;
-            background-color: var(--card-bg);
-            box-sizing: border-box;
-        } 
-
-        #invisibleStemRelContainer text.spawned-stem {
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
-        #arrowCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 9999;
-        } 
-
-        #invisibleBranchRelContainer text.spawned-branch {
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
-        .bar-label-vertical {
-            /* Pin flush to the left edge inside the container border */
-            position: sticky;
-            left: -12px;
-            margin: -10px 6px -10px -12px; /* Pull flush over container padding */
-            padding: 10px 12px;            /* Preserve inner alignment */
-            z-index: 10;
-            background-color: var(--container-bg); /* Match container background */
-
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            font-weight: 700;
-            line-height: 1.1;
-            border-right: 2px solid var(--border-color);
-            color: var(--sub-text-color);
-            user-select: none;
-            flex-shrink: 0;
-        }
-
-        /* Stem tag outline for Ming Gong */
-        .stem-tag.minggong,
-        .bazi-extra-pillar.minggong {
-            border: 2px solid #d4ac0d; /* Golden outline matching Ming Gong theme */
-            background-color: var(--sel-minggong-bg);
-        } 
-    </style> 
-</head>
+    <script src="constants.js" defer></script>
+</head> 
 <body>
 
     <div class="controls-bar">
@@ -417,165 +70,17 @@
             <marker id="arrowhead-chong" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="orange"/>
             </marker>
+            <marker id="arrowhead-xing" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="purple"/>
+            </marker>
         </defs>
     </svg>
 
     <pre id="errorResult" style="color: red; margin-top: 10px; font-size: 13px;"></pre>
 
     <script>
-        const 水 = ["壬", "癸", "子", "亥"];
-        const 火 = ["丙", "丁", "午", "巳"];
-        const 金 = ["庚", "辛", "申", "酉"];
-        const 木 = ["甲", "乙", "寅", "卯"];
-        const 土 = ["戊", "己", "辰", "戌", "丑", "未"];
-
-        const 陽 = ["甲", "丙", "戊", "庚", "壬", "亥", "寅", "辰", "巳", "申", "戌"];
-        const 陰 = ["乙", "丁", "己", "辛", "癸", "丑", "卯", "午", "未", "酉", "子"];
-
-        const five_elements = ["水", "火", "金", "木", "土"];
-        const relations = {
-            "水" : ["同我者", "我剋者", "生我者", "我生者", "剋我者"], 
-            "火" : ["剋我者", "同我者", "我剋者", "生我者", "我生者"], 
-            "金" : ["我生者", "剋我者", "同我者", "我剋者", "生我者"], 
-            "木" : ["生我者", "我生者", "剋我者", "同我者", "我剋者"], 
-            "土" : ["我剋者", "生我者", "我生者", "剋我者", "同我者"]
-        }; 
-        const ten_gods = ["比肩", "劫財", "七殺", "正官", "偏印", "正印", "食神", "傷官", "偏財", "正財"];
-
-        const tenkan_order = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-        const deizi_order = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-        const yuanYunOptions = [
-            { year: "1864", stem: "己", branch: "未" }, 
-            { year: "1924", stem: "庚", branch: "申" },
-            { year: "1984", stem: "辛", branch: "酉" },
-            { year: "2044", stem: "壬", branch: "戌" }
-        ]; 
-
-        const tenkan_deizi_rel = {
-            "木": ["沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養","長生"], 
-            "火": ["胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕"],
-            "土": ["胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕"],
-            "金": ["死","墓庫","絕","胎","養","長生","沐浴","冠帶","臨官","帝旺","衰","病"],
-            "水": ["帝旺","衰","病","死","墓庫","絕","胎","養","長生","沐浴","冠帶","臨官"]
-        };
-
-        const deizi_hidden_tenkan = {
-            "寅" : ["甲", "丙", "戊"],
-            "卯" : ["乙"],
-            "辰" : ["戊", "乙", "癸"],
-            "巳" : ["丙", "戊", "庚"],
-            "午" : ["丁", "己" ],
-            "未" : ["己", "丁", "乙"], 
-            "申" : ["庚", "壬", "戊"],
-            "酉" : ["辛"],
-            "戌" : ["戊", "辛", "丁"], 
-            "亥" : ["壬", "甲"],
-            "子" : ["癸"],
-            "丑" : ["己", "癸", "辛"]
-        };
-
-        const tenkan_relationships = {
-            "合": {
-                "土": ["甲", "己"], 
-                "金": ["乙", "庚"], 
-                "水": ["丙", "辛"],
-                "木": ["丁", "壬"],
-                "火": ["戊", "癸"]
-            },
-            "沖": {
-                "1": ["甲", "庚"], 
-                "2": ["乙", "辛"], 
-                "3": ["丙", "壬"],
-                "4": ["丁", "癸"], 
-                "5": ["戊", "甲"], 
-                "6": ["己", "乙"], 
-                "7": ["庚", "丙"],
-                "8": ["辛", "丁"], 
-                "9": ["壬", "戊"], 
-                "10": ["癸", "己"]
-            }
-        };
-
-        const 三合 = { 
-            "水" : ["申", "子", "辰"],
-            "金" : ["巳", "酉", "丑"],
-            "火" : ["寅", "午", "戌"],
-            "木" : ["亥", "卯", "未"] 
-        };
-
-        const 三會 = { 
-            "水" : ["亥", "子", "丑"],
-            "金" : ["申", "酉", "戌"],
-            "火" : ["巳", "午", "未"],
-            "木" : ["寅", "卯", "辰"] 
-        };
-
-        const 三刑 = {
-            "恃勢之刑" : ["未", "丑", "戌"],
-            "無恩之刑" : ["申", "寅", "巳"]
-        };
-
-        const 無禮之刑 = ["子", "卯"];
-        const 自刑 = ["辰", "午", "酉", "亥"];
-
-        const six_rel = {
-            "合": { 
-                "土": ["子", "丑"],
-                "木": ["寅", "亥"],
-                "火": ["卯", "戌"],
-                "金": ["酉", "辰"],
-                "水": ["巳", "申"],
-                "火土": ["午", "未"],
-            }, 
-            "沖": { 
-                "0": ["子", "午"],
-                "1": ["丑", "未"],
-                "2": ["寅", "申"],
-                "3": ["卯", "酉"],
-                "4": ["辰", "戌"],
-                "5": ["巳", "亥"], 
-            } 
-        };
-
-        const punishMap = {
-            "戌": "未", "丑": "戌", "未": "丑",
-            "寅": "巳", "巳": "申", "申": "寅"
-        };
-
         // Toggle state for 命宮
         let isMinggongActive = false;
-
-        // 1. Program Data Dictionaries
-        const 程式 = {
-        "子": { "子": "巳", "丑": "辰", "寅": "卯", "卯": "寅", "辰": "丑", "巳": "子", "午": "亥", "未": "戌", "申": "酉", "酉": "申", "戌": "未", "亥": "午" },
-        "丑": { "子": "辰", "丑": "卯", "寅": "寅", "卯": "丑", "辰": "子", "巳": "亥", "午": "戌", "未": "酉", "申": "申", "酉": "未", "戌": "午", "亥": "巳" },
-        "寅": { "子": "卯", "丑": "寅", "寅": "丑", "卯": "子", "辰": "亥", "巳": "戌", "午": "酉", "未": "申", "申": "未", "酉": "午", "戌": "巳", "亥": "辰" },
-        "卯": { "子": "寅", "丑": "丑", "寅": "子", "卯": "亥", "辰": "戌", "巳": "酉", "午": "申", "未": "未", "申": "午", "酉": "巳", "戌": "辰", "亥": "卯" },
-        "辰": { "子": "丑", "丑": "子", "寅": "亥", "卯": "戌", "辰": "酉", "巳": "申", "午": "未", "未": "午", "申": "巳", "酉": "辰", "戌": "卯", "亥": "寅" },
-        "巳": { "子": "子", "丑": "亥", "寅": "戌", "卯": "酉", "辰": "申", "巳": "未", "午": "午", "未": "巳", "申": "辰", "酉": "卯", "戌": "寅", "亥": "丑" },
-        "午": { "子": "亥", "丑": "戌", "寅": "酉", "卯": "申", "辰": "未", "巳": "午", "午": "巳", "未": "辰", "申": "卯", "酉": "寅", "戌": "丑", "亥": "子" },
-        "未": { "子": "戌", "丑": "酉", "寅": "申", "卯": "未", "辰": "午", "巳": "巳", "午": "辰", "未": "卯", "申": "寅", "酉": "丑", "戌": "子", "亥": "亥" },
-        "申": { "子": "酉", "丑": "申", "寅": "未", "卯": "午", "辰": "巳", "巳": "辰", "午": "卯", "未": "寅", "申": "丑", "酉": "子", "戌": "亥", "亥": "戌" },
-        "酉": { "子": "申", "丑": "未", "寅": "午", "卯": "巳", "辰": "辰", "巳": "卯", "午": "寅", "未": "丑", "申": "子", "酉": "亥", "戌": "戌", "亥": "酉" },
-        "戌": { "子": "未", "丑": "午", "寅": "巳", "卯": "辰", "辰": "卯", "巳": "寅", "午": "丑", "未": "子", "申": "亥", "酉": "戌", "戌": "酉", "亥": "申" },
-        "亥": { "子": "午", "丑": "巳", "寅": "辰", "卯": "卯", "辰": "寅", "巳": "丑", "午": "子", "未": "亥", "申": "戌", "酉": "酉", "戌": "申", "亥": "未" }
-        };
-
-        const 五虎遁歌訣 = {
-        "甲": { "寅": "丙", "卯": "丁", "辰": "戊", "巳": "己", "午": "庚", "未": "辛", "申": "壬", "酉": "癸", "戌": "甲", "亥": "乙", "子": "丙", "丑": "丁" },
-        "乙": { "寅": "戊", "卯": "己", "辰": "庚", "巳": "辛", "午": "壬", "未": "癸", "申": "甲", "酉": "乙", "戌": "丙", "亥": "丁", "子": "戊", "丑": "己" },
-        "丙": { "寅": "庚", "卯": "辛", "辰": "壬", "巳": "癸", "午": "甲", "未": "乙", "申": "丙", "酉": "丁", "戌": "戊", "亥": "己", "子": "庚", "丑": "辛" },
-        "丁": { "寅": "壬", "卯": "癸", "辰": "甲", "巳": "乙", "午": "丙", "未": "丁", "申": "戊", "酉": "己", "戌": "庚", "亥": "辛", "子": "壬", "丑": "癸" },
-        "戊": { "寅": "甲", "卯": "乙", "辰": "丙", "巳": "丁", "午": "戊", "未": "己", "申": "庚", "酉": "辛", "戌": "壬", "亥": "癸", "子": "甲", "丑": "乙" },
-        "己": { "寅": "丙", "卯": "丁", "辰": "戊", "巳": "己", "午": "庚", "未": "辛", "申": "壬", "酉": "癸", "戌": "甲", "亥": "乙", "子": "丙", "丑": "丁" },
-        "庚": { "寅": "戊", "卯": "己", "辰": "庚", "巳": "辛", "午": "壬", "未": "癸", "申": "甲", "酉": "乙", "戌": "丙", "亥": "丁", "子": "戊", "丑": "己" },
-        "辛": { "寅": "庚", "卯": "辛", "辰": "壬", "巳": "癸", "午": "甲", "未": "乙", "申": "丙", "酉": "丁", "戌": "戊", "亥": "己", "子": "庚", "丑": "辛" },
-        "壬": { "寅": "壬", "卯": "癸", "辰": "甲", "巳": "乙", "午": "丙", "未": "丁", "申": "戊", "酉": "己", "戌": "庚", "亥": "辛", "子": "壬", "丑": "癸" },
-        "癸": { "寅": "甲", "卯": "乙", "辰": "丙", "巳": "丁", "午": "戊", "未": "己", "申": "庚", "酉": "辛", "戌": "壬", "亥": "癸", "子": "甲", "丑": "乙" }
-        };
 
         function calculateMinggong() {  
             if (!currentBaziData) return null;
@@ -1016,7 +521,7 @@
             let rels = findInvisibleStemRelationships(stems);
 
             if (isSplitMode && headers) {
-                const groupA = ["時", "日", "月", "年", "元運"];
+                const groupA = ["命宮", "時", "日", "月", "年", "元運"]; 
                 const groupB = ["大運", "流年", "流月", "流日", "流時"];
                 rels = rels.filter(rel => {
                     const hasA = rel.indices.some(idx => groupA.includes(headers[idx]));
@@ -1271,7 +776,7 @@
 
                 svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="2" />`;
 
-                svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}')">${rel.hiddenBranch}</text>`;
+                svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
             }); 
 
             svgHtml += `</svg>`;
@@ -2628,6 +2133,9 @@
 
             const adjustedDistance = Math.hypot(adjustedEndX - adjustedStartX, adjustedEndY - adjustedStartY);
 
+            // 1. Wrap in a <g> container
+            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", adjustedStartX);
             line.setAttribute("y1", adjustedStartY);
@@ -2635,31 +2143,80 @@
             line.setAttribute("y2", adjustedEndY);
             line.setAttribute("stroke", color);
             line.setAttribute("stroke-width", "2.5");
-            line.setAttribute("marker-end", `url(#${markerId})`);
-
-            // If bidirectional, add marker to the start of the line as well
-            if (isBiDirectional) {
-                line.setAttribute("marker-start", `url(#${markerId})`);
-            }
-
+            
             line.style.strokeDasharray = adjustedDistance;
             line.style.strokeDashoffset = adjustedDistance;
 
-            canvas.appendChild(line);
+            group.appendChild(line);
+            canvas.appendChild(group);
 
-            line.animate([
+            // 2. Animate line drawing
+            const drawAnim = line.animate([
                 { strokeDashoffset: adjustedDistance },
                 { strokeDashoffset: 0 }
             ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
 
-            line.animate([
+            // 3. Dynamically attach arrowhead once draw finishes
+            drawAnim.onfinish = () => {
+                line.setAttribute("marker-end", `url(#${markerId})`);
+                if (isBiDirectional) {
+                    line.setAttribute("marker-start", `url(#${markerId})`);
+                }
+            };
+
+            // 4. Animate opacity on the GROUP (<g>) so line and marker fade out together
+            group.animate([
                 { opacity: 1 },
                 { opacity: 0 }
             ], { duration: 500, delay: 1500, easing: 'ease-out', fill: 'forwards' });
 
-            setTimeout(() => line.remove(), 2100);
+            // 5. Remove the entire group node from DOM
+            setTimeout(() => group.remove(), 2100);
             return true;
-        }
+        } 
+
+        function drawXingArrows(sourceElement, char) {
+            const canvas = document.getElementById('arrowCanvas');
+            if (!canvas) return;
+
+            // 1. Find elements that the clicked character punishes (Outgoing)
+            const targets = xingMap[char] || [];
+            
+            // 2. Find elements that punish the clicked character (Incoming)
+            const sources = Object.keys(xingMap).filter(key => xingMap[key].includes(char));
+
+            // Exit if the character doesn't trigger any 刑 relationship
+            if (targets.length === 0 && sources.length === 0) { 
+                return;
+            }
+
+            // Target elements in the Bazi grid and toggled SVG sections
+            const querySelectors = '.bazi-square, .bazi-rect, .stem-char, text.spawned-branch, text.spawned-stem, .main-pillar-branch, .time-pillar-branch';
+            const allNodes = document.querySelectorAll(querySelectors);
+            
+            let arrowsDrawnCount = 0;
+
+            allNodes.forEach(node => {
+                // Prevent drawing an arrow to the exact same element clicked
+                if (node === sourceElement) return; 
+                
+                const textContent = (node.textContent || node.innerText).trim();
+                
+                // Outgoing Relationship: Draw arrow from clicked element to node
+                if (targets.some(t => textContent.includes(t))) {
+                    if (createArrow(sourceElement, node, "purple", "arrowhead-xing", false)) {
+                        arrowsDrawnCount++;
+                    }
+                }
+
+                // Incoming Relationship: Draw arrow from node to clicked element
+                if (sources.some(s => textContent.includes(s))) {
+                    if (createArrow(node, sourceElement, "purple", "arrowhead-xing", false)) {
+                        arrowsDrawnCount++;
+                    }
+                }
+            });
+        } // ok 
 
         function triggerDizhiArrows(clickedElement, sourceChar) { 
             const canvas = document.getElementById('arrowCanvas');
@@ -3100,6 +2657,7 @@
                     event.stopPropagation();
                     const branchChar = this.textContent.trim();
                     triggerDizhiArrows(this, branchChar);
+                    drawXingArrows(this, branchChar); 
                 };
             }); 
         } 
