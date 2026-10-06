@@ -21,7 +21,11 @@
     --sel-liushi-bg: #e0f7fa;
     --sel-yuanyun-bg: #fff0f5;
     --sel-minggong-bg: #fffbe6; /* Warm gold/yellow tint */
-}
+    --sel-minggong-bg: #fffbe6; /* Warm gold/yellow tint */
+    --sel-taiyuan-bg: #e6fcf5; /* Light teal tint for Taiyuan */
+    --sel-taixi-bg: #e6ebfc; 
+    --sel-shengong-bg: #fce6f6; 
+} 
 
 [data-theme="dark"] {
     --bg-color: #121212;
@@ -45,6 +49,9 @@
     --sel-liushi-bg: #4a0033;
     --sel-yuanyun-bg: #00363d; 
     --sel-minggong-bg: #3d3200; /* Dark gold tint */ 
+    --sel-taiyuan-bg: #0b3d2c; /* Dark teal tint for Taiyuan */
+    --sel-taixi-bg: #0b1c3d; 
+    --sel-shengong-bg: #3d0b2e; 
 }
 
 body {
@@ -89,10 +96,27 @@ body {
     font-size: 14px;
     padding: 2px 8px;
 }
+
 .dayun-card.selected-minggong {
     border-color: #d4ac0d; /* Distinct golden border */
     background-color: var(--sel-minggong-bg);
 }
+
+/* Add this new rule for Taiyuan */
+.dayun-card.selected-taiyuan {
+    border-color: #20c997; /* Distinct teal border */
+    background-color: var(--sel-taiyuan-bg);
+} 
+
+.dayun-card.selected-taixi {
+    border-color: #207dc9; /* Distinct teal border */
+    background-color: var(--sel-taixi-bg);
+} 
+
+.dayun-card.selected-shengong {
+    border-color: #c920c9; /* Distinct teal border */
+    background-color: var(--sel-shengong-bg); 
+} 
 
 /* Bazi Grid Components */
 .bazi-container {
