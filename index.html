@@ -1784,18 +1784,22 @@
             const yearSelect = document.getElementById('yearSelect');
             const yr = parseInt(yearSelect.value, 10);
 
-            return yuanYunOptions.filter(item => {
-                const itemYear = parseInt(item.year, 10);
-                if (yr >= 2044) {
-                    return itemYear >= 2044;
-                } else if (yr >= 1984) {
-                    return itemYear >= 1984;
-                } else if (yr >= 1924) {
-                    return itemYear >= 1924;
-                } else {
-                    return itemYear >= 1864;
+            // Dynamically find the active 60-year cycle start year
+            let activeCycleYear = -Infinity;
+            yuanYunOptions.forEach(item => {
+                const itemY = parseInt(item.year, 10);
+                if (itemY <= yr && itemY > activeCycleYear) {
+                    activeCycleYear = itemY;
                 }
             });
+
+            // Fallback in case a year before 1564 is selected
+            if (activeCycleYear === -Infinity) {
+                activeCycleYear = parseInt(yuanYunOptions[0].year, 10);
+            }
+
+            // Return all options from the active cycle onwards
+            return yuanYunOptions.filter(item => parseInt(item.year, 10) >= activeCycleYear);
         } 
 
         function renderMinggongBar() {
@@ -2827,13 +2831,13 @@
                 setTheme('light');
             }
 
-            for (let y = 1900; y <= 2100; y++) {
+            for (let y = 1600; y <= 2100; y++) {
                 let opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
                 if (y === currentYear) opt.selected = true;
                 yearSelect.appendChild(opt);
-            }
+            } 
 
             for (let m = 1; m <= 12; m++) {
                 let opt = document.createElement('option');

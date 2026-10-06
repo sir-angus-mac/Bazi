@@ -23,11 +23,16 @@ const 水 = ["壬", "癸", "子", "亥"];
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
         const yuanYunOptions = [
+            { year: "1564", stem: "甲", branch: "寅" },
+            { year: "1624", stem: "乙", branch: "卯" },
+            { year: "1684", stem: "丙", branch: "辰" },
+            { year: "1744", stem: "丁", branch: "巳" },
+            { year: "1804", stem: "戊", branch: "午" },
             { year: "1864", stem: "己", branch: "未" }, 
             { year: "1924", stem: "庚", branch: "申" },
             { year: "1984", stem: "辛", branch: "酉" },
             { year: "2044", stem: "壬", branch: "戌" }
-        ]; 
+        ];
 
         const tenkan_deizi_rel = {
             "木": ["沐浴","冠帶","臨官","帝旺","衰","病","死","墓庫","絕","胎","養","長生"], 
