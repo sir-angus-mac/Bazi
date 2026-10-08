@@ -611,6 +611,21 @@
 
             let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
+            // --- NEW SEPARATOR LOGIC ---
+            if (isSplitMode && headers) {
+                let targetIdx = headers.indexOf("元運");
+                if (targetIdx === -1) {
+                    targetIdx = headers.indexOf("年");
+                }
+                if (targetIdx !== -1 && targetIdx < N - 1) { 
+                    // 49 is exactly half the distance between elements (98 / 2)
+                    const splitX = xCoords[targetIdx] + 49; 
+                    const lineColor = isDarkMode() ? "#666" : "#aaa";
+                    svgHtml += `<line x1="${splitX}" y1="0" x2="${splitX}" y2="${totalHeight}" stroke="${lineColor}" stroke-width="1.5" stroke-dasharray="4,4" />`;
+                }
+            }
+            // ---------------------------
+
             rels.forEach((rel, k) => {
                 const yTop = k * layerHeight + 6;
                 const yBar = yTop + 14;
@@ -834,6 +849,20 @@
             const totalHeight = rels.length * layerHeight + 8;
 
             let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+            // --- NEW SEPARATOR LOGIC ---
+            if (isSplitMode && headers) {
+                let targetIdx = headers.indexOf("元運");
+                if (targetIdx === -1) {
+                    targetIdx = headers.indexOf("年");
+                }
+                if (targetIdx !== -1 && targetIdx < N - 1) {
+                    const splitX = xCoords[targetIdx] + 49;
+                    const lineColor = isDarkMode() ? "#666" : "#aaa";
+                    svgHtml += `<line x1="${splitX}" y1="0" x2="${splitX}" y2="${totalHeight}" stroke="${lineColor}" stroke-width="1.5" stroke-dasharray="4,4" />`;
+                }
+            }
+            // ---------------------------  
 
             rels.forEach((rel, k) => {
                 const yTop = k * layerHeight + 6;
