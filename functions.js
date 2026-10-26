@@ -13,6 +13,95 @@ let liuriBarVisible = false;
 let liushiBarVisible = false;
 let isSplitMode = true; 
 
+/**
+ * Packs relationships into the minimum number of vertical layers (tracks)
+ * without horizontal overlap.
+ */
+/**
+ * Packs relationships into the minimum number of vertical layers.
+ * Allows adjacent relationships sharing a pillar to occupy the same row
+ * by offsetting (scooting) the anchor points by 12px.
+ */
+function packRelationships(rels, xCoords, offset = 12) {
+    if (!rels || rels.length === 0) {
+        return { packedRels: [], totalLayers: 0 };
+    }
+
+    // 1. Calculate column boundaries [minCol, maxCol]
+    const decorated = rels.map((rel, originalIdx) => {
+        const sorted = [...rel.indices].sort((a, b) => a - b);
+        return {
+            ...rel,
+            minCol: sorted[0],
+            maxCol: sorted[sorted.length - 1],
+            originalIdx
+        };
+    });
+
+    // 2. Sort from left to right
+    decorated.sort((a, b) => a.minCol - b.minCol || a.maxCol - b.maxCol);
+
+    // 3. Greedy track assignment: "<=" allows sharing the boundary pillar!
+    const tracks = [];
+
+    decorated.forEach(rel => {
+        let assignedLayer = -1;
+
+        for (let layer = 0; layer < tracks.length; layer++) {
+            // "<=" means if previous ends at pillar 1, this one can start at pillar 1 on the same row!
+            if (tracks[layer] <= rel.minCol) {
+                assignedLayer = layer;
+                tracks[layer] = rel.maxCol;
+                break;
+            }
+        }
+
+        if (assignedLayer === -1) {
+            assignedLayer = tracks.length;
+            tracks.push(rel.maxCol);
+        }
+
+        rel.layer = assignedLayer;
+    });
+
+    // 4. Calculate scooted coordinates for each relationship
+    decorated.forEach(rel => {
+        // Does this relationship share its left pillar with another on the SAME layer?
+        const hasLeftNeighbor = decorated.some(other =>
+            other !== rel &&
+            other.layer === rel.layer &&
+            other.maxCol === rel.minCol
+        );
+
+        // Does this relationship share its right pillar with another on the SAME layer?
+        const hasRightNeighbor = decorated.some(other =>
+            other !== rel &&
+            other.layer === rel.layer &&
+            other.minCol === rel.maxCol
+        );
+
+        // Helper to retrieve the scooted X coordinate for any pillar index
+        rel.getX = function(idx) {
+            const base = xCoords[idx];
+            if (idx === rel.minCol && hasLeftNeighbor) {
+                return base + offset; // scoot right
+            }
+            if (idx === rel.maxCol && hasRightNeighbor) {
+                return base - offset; // scoot left
+            }
+            return base;
+        };
+
+        rel.minX = rel.getX(rel.minCol);
+        rel.maxX = rel.getX(rel.maxCol);
+    });
+
+    return {
+        packedRels: decorated,
+        totalLayers: tracks.length
+    };
+} 
+
 // Function to handle the expanding/collapsing
 function toggleRelContainer(event, el) {
     // If it is currently expanded, only collapse if the click target is exactly the border/padding
@@ -184,26 +273,27 @@ function renderStemRelationships(stems) {
     const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
     const viewBoxWidth = N * 90 + (N - 1) * 8;
     const layerHeight = 40;
-    const totalHeight = rels.length * layerHeight + 8;
+
+    // --- PACK WITH SCOOTING ---
+    const { packedRels, totalLayers } = packRelationships(rels, xCoords, 12);
+    const totalHeight = totalLayers * layerHeight + 8;
 
     let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
-    rels.forEach((rel, k) => {
-        const yTop = k * layerHeight + 6;
+    packedRels.forEach((rel) => {
+        const yTop = rel.layer * layerHeight + 6;
         const yText = yTop + 13;
         const yBar = yTop + 18;
         const yBottom = yTop + 34;
 
-        const sortedIndices = [...rel.indices].sort((a, b) => a - b);
-        const minX = xCoords[sortedIndices[0]];
-        const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
-
+        const minX = rel.minX;
+        const maxX = rel.maxX;
         let strokeColor = getRelColor(rel.color);
 
         svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
 
         rel.indices.forEach((idx, arrIdx) => {
-            const x = xCoords[idx];
+            const x = rel.getX(idx); // Scooted X!
             const isActive = rel.active[arrIdx];
 
             if (isActive) {
@@ -227,7 +317,7 @@ function renderStemRelationships(stems) {
 
     svgHtml += `</svg>`;
     container.innerHTML = svgHtml;
-}
+} 
 
 function findBranchRelationships(branches) {
     const results = []; 
@@ -425,18 +515,20 @@ function renderRelationships(branches) {
     const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
     const viewBoxWidth = N * 90 + (N - 1) * 8;
     const layerHeight = 40;
-    const totalHeight = rels.length * layerHeight + 8;
+
+    // --- PACK WITH SCOOTING ---
+    const { packedRels, totalLayers } = packRelationships(rels, xCoords, 12);
+    const totalHeight = totalLayers * layerHeight + 8;
 
     let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
-    rels.forEach((rel, k) => {
-        const yTop = k * layerHeight + 6;
+    packedRels.forEach((rel, k) => {
+        const yTop = rel.layer * layerHeight + 6;
         const yBar = yTop + 12;
         const yText = yBar + 16;
 
-        const sortedIndices = [...rel.indices].sort((a, b) => a - b);
-        const minX = xCoords[sortedIndices[0]];
-        const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
+        const minX = rel.minX;
+        const maxX = rel.maxX;
 
         let strokeColor = getRelColor(rel.color);
         let textFillColor = getRelColor(rel.color);
@@ -470,11 +562,12 @@ function renderRelationships(branches) {
         svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
 
         rel.indices.forEach((idx, arrIdx) => {
-            const x = xCoords[idx];
+            const x = rel.getX(idx); // Scooted X!
             const isActive = rel.active[arrIdx];
 
             let itemColor = strokeColor;
             if (rel.isFireEarth) {
+                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
                 itemColor = (idx === sortedIndices[0]) ? getRelColor("red") : getRelColor("brown");
             }
 
@@ -499,7 +592,7 @@ function renderRelationships(branches) {
 
     svgHtml += `</svg>`;
     container.innerHTML = svgHtml;
-}
+} 
 
 function removeYuanyun() {
     selectedYuanyun = null;

@@ -436,7 +436,7 @@
 
         // --- INVISIBLE HEAVENLY STEM RELATIONSHIPS (盲派 暗天干) ---
         function findInvisibleStemRelationships(stems) {  
-            const results = [];
+            const results = [];  
             const N = stems.length;
             const seen = new Set();
 
@@ -453,7 +453,6 @@
                 "己": "乙", "庚": "丙", "辛": "丁", "壬": "戊", "癸": "己"
             };
 
-            // Dynamically build a map for 合 partners from tenkan_relationships["合"]
             const stemHePartnerMap = {};
             if (typeof tenkan_relationships !== "undefined" && tenkan_relationships["合"]) {
                 for (const [elem, pair] of Object.entries(tenkan_relationships["合"])) {
@@ -462,14 +461,31 @@
                 }
             }
 
-            // 1. Check adjacent/neighboring stems (distance 1)
+            // 1. 檢查緊貼相鄰兩柱 (Distance 1)
             for (let i = 0; i < N - 1; i++) {
                 const j = i + 1;
                 const s1 = stems[i];
                 const s2 = stems[j];
+                if (!s1 || !s2) continue;
+
+                // 相鄰同字天干 (如 丁丁 -> 壬)
+                if (s1 === s2) {
+                    const partnerStem = stemHePartnerMap[s1] || null;
+                    const key = `same_neighbor_${i}_${j}_${s1}_${partnerStem}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        results.push({
+                            type: 'same_neighbor',
+                            indices: [i, j],
+                            hiddenStem: partnerStem
+                        });
+                    }
+                    continue; 
+                }
+
+                // 常規相鄰序數天干 (如 甲乙、乙丙) -> 普通相連 Bond
                 const idx1 = tenkan_order.indexOf(s1);
                 const idx2 = tenkan_order.indexOf(s2);
-
                 if (idx1 !== -1 && idx2 !== -1) {
                     if ((idx2 - idx1 + 10) % 10 === 1 || (idx1 - idx2 + 10) % 10 === 1) {
                         const key = `neighbor_${i}_${j}`;
@@ -485,14 +501,14 @@
                 }
             }
 
-            // 2. Check pairs of stems
+            // 2. 檢查間隔天干對 (隔位才生暗合字，j > i + 1)
             for (let i = 0; i < N; i++) {
                 for (let j = i + 1; j < N; j++) {
                     const s1 = stems[i];
                     const s2 = stems[j];
 
-                    // Rule: Two identical Heavenly Stems spawn their 合 partner
-                    if (s1 === s2 && stemHePartnerMap[s1]) {
+                    // 兩干相同但「非緊貼」（隔位）時，依然引出暗合之字
+                    if (s1 === s2 && j > i + 1 && stemHePartnerMap[s1]) {
                         const partnerStem = stemHePartnerMap[s1];
                         const key = `two_same_${i}_${j}_${partnerStem}`;
                         if (!seen.has(key)) {
@@ -503,13 +519,13 @@
                                 hiddenStem: partnerStem
                             });
                         }
+                        continue;
                     }
 
                     const idx1 = tenkan_order.indexOf(s1);
                     const idx2 = tenkan_order.indexOf(s2);
-
                     if (idx1 !== -1 && idx2 !== -1) {
-                        // Missing stem in sequence (distance 2)
+                        // 隔一位夾出中間天干 (Distance 2)
                         let missingStem = null;
                         if ((idx2 - idx1 + 10) % 10 === 2) {
                             missingStem = tenkan_order[(idx1 + 1) % 10];
@@ -529,7 +545,7 @@
                             }
                         }
 
-                        // He-Yin (合化引出) stems
+                        // 合化引出 (He-Yin)
                         const comboKey = `${s1}_${s2}`;
                         if (stemHeYinMap[comboKey]) {
                             const yinStem = stemHeYinMap[comboKey];
@@ -547,7 +563,7 @@
                 }
             }
 
-            // 3. Check three identical stems
+            // 3. 三同干沖出一殺
             for (let i = 0; i < N; i++) {
                 for (let j = i + 1; j < N; j++) {
                     for (let k = j + 1; k < N; k++) {
@@ -576,11 +592,10 @@
 
         function renderInvisibleStemRelationships(stems, headers) {
             const container = document.getElementById('invisibleStemRelContainer');
-            if (!container) return; 
+            if (!container) return;    
 
             let rels = findInvisibleStemRelationships(stems);
 
-            // Filter out any invisible stem relationship involving 命宮
             if (headers) {
                 rels = rels.filter(rel => !rel.indices.some(idx => headers[idx] === "命宮" || headers[idx] === "胎元" || headers[idx] === "胎息" || headers[idx] === "身宮"));
             }
@@ -607,35 +622,34 @@
             const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
             const viewBoxWidth = N * 90 + (N - 1) * 8;
             const layerHeight = 45;
-            const totalHeight = rels.length * layerHeight + 8;
+
+            const { packedRels, totalLayers } = packRelationships(rels, xCoords, 12);
+            const totalHeight = totalLayers * layerHeight + 8;
 
             let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
-            // --- NEW SEPARATOR LOGIC ---
             if (isSplitMode && headers) {
                 let targetIdx = headers.indexOf("元運");
                 if (targetIdx === -1) {
                     targetIdx = headers.indexOf("年");
                 }
                 if (targetIdx !== -1 && targetIdx < N - 1) { 
-                    // 49 is exactly half the distance between elements (98 / 2)
                     const splitX = xCoords[targetIdx] + 49; 
                     const lineColor = isDarkMode() ? "#666" : "#aaa";
                     svgHtml += `<line x1="${splitX}" y1="0" x2="${splitX}" y2="${totalHeight}" stroke="${lineColor}" stroke-width="1.5" stroke-dasharray="4,4" />`;
                 }
             }
-            // ---------------------------
 
-            rels.forEach((rel, k) => {
-                const yTop = k * layerHeight + 6;
+            packedRels.forEach((rel, k) => {
+                const yTop = rel.layer * layerHeight + 6;
                 const yBar = yTop + 14;
                 const yBottom = yTop + 38;
 
-                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
-                const minX = xCoords[sortedIndices[0]];
-                const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
+                const minX = rel.minX;
+                const maxX = rel.maxX;
                 const midX = (minX + maxX) / 2;
 
+                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
                 const leftStem = stems[sortedIndices[0]];
                 const rightStem = stems[sortedIndices[sortedIndices.length - 1]];
 
@@ -655,17 +669,21 @@
                     </defs>
                 `;
 
-                const strokeColor = `url(#${gradId})`;
-                const hasHiddenStem = Boolean(rel.hiddenStem && rel.type !== 'neighbor' && rel.type !== 'bond');
+                const isSameNeighbor = (rel.type === 'same_neighbor');
+                const isNeighbor = (rel.type === 'neighbor');
+                const hasHiddenStem = Boolean(rel.hiddenStem && !isNeighbor);
 
-                const strokeWidth = hasHiddenStem ? 2 : 3.5;
-                const dotRadius = hasHiddenStem ? 3 : 5;
+                let strokeWidth = 2;
+                if (isSameNeighbor) strokeWidth = 6;
+                else if (isNeighbor) strokeWidth = 3.5;
+
+                const strokeColor = isSameNeighbor ? cLeft : `url(#${gradId})`;
 
                 if (!hasHiddenStem) {
                     svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
 
                     sortedIndices.forEach(idx => {
-                        const x = xCoords[idx];
+                        const x = rel.getX(idx);
                         svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
                     });
                 } else {
@@ -676,11 +694,9 @@
                     svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
                     svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
 
-                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${isSameNeighbor ? 2.5 : strokeWidth}" />`;
 
                     const hiddenCol = getRelColor(getElementColor(rel.hiddenStem));
-
-                    // Apply 合化 toggle logic
                     let displayText = rel.hiddenStem;
                     let displayColor = hiddenCol;
 
@@ -689,7 +705,6 @@
                         displayColor = isDarkMode() ? "#e0e0e0" : "#222"; 
                     }
 
-                    // Disable triggerArrows when displaying "合"
                     const clickHandler = (displayText === "合") 
                         ? "event.stopPropagation();" 
                         : `event.stopPropagation(); triggerArrows(this, '${rel.hiddenStem}')`;
@@ -697,29 +712,32 @@
                     svgHtml += `<text class="spawned-stem" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${displayColor}" onclick="${clickHandler}">${displayText}</text>`;
                     
                     sortedIndices.forEach(idx => { 
-                        const x = xCoords[idx];
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                        const x = rel.getX(idx);
+                        const cap = isSameNeighbor ? 'stroke-linecap="round"' : '';
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${cap} />`;
                     });
                 }
 
-                sortedIndices.forEach(idx => {
-                    const x = xCoords[idx];
-                    const dotCol = getRelColor(getElementColor(stems[idx]));
-                    if (hasHiddenStem) {
-                        svgHtml += `<circle cx="${x}" cy="${yBottom}" r="${dotRadius}" fill="${dotCol}" />`;
-                    } else {
-                        svgHtml += `<circle cx="${x}" cy="${yBottom}" r="${dotRadius}" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
-                    }
-                });
+                if (!isSameNeighbor) {
+                    sortedIndices.forEach(idx => {
+                        const x = rel.getX(idx);
+                        const dotCol = getRelColor(getElementColor(stems[idx]));
+                        if (hasHiddenStem) {
+                            svgHtml += `<circle cx="${x}" cy="${yBottom}" r="3" fill="${dotCol}" />`;
+                        } else {
+                            svgHtml += `<circle cx="${x}" cy="${yBottom}" r="5" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
+                        }
+                    });
+                }
             });
 
             svgHtml += `</svg>`;
             container.innerHTML = svgHtml;
-        } 
+        }
 
         // --- INVISIBLE EARTHLY BRANCH RELATIONSHIPS (盲派 暗拱/暗夾) ---
         function findInvisibleBranchRelationships(branches) {
-            const results = [];
+            const results = [];  
             const N = branches.length;
             const seen = new Set();
 
@@ -744,11 +762,54 @@
 
             const zhiOrder = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
+            // 1. 檢查緊貼相鄰兩柱 (Distance 1)
+            for (let i = 0; i < N - 1; i++) {
+                const j = i + 1;
+                const b1 = branches[i];
+                const b2 = branches[j];
+                if (!b1 || !b2) continue;
+
+                // 相鄰同字地支 (如 未未 -> 午)
+                if (b1 === b2) {
+                    const partner = getSixRelPartner(b1);
+                    const key = `same_neighbor_${i}_${j}_${b1}_${partner}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        results.push({
+                            type: 'same_neighbor',
+                            indices: [i, j],
+                            hiddenBranch: partner,
+                            color: partner ? getElementColor(partner) : null
+                        });
+                    }
+                    continue;
+                }
+
+                // 常規相鄰序數地支 (如 丑寅、卯辰) -> 普通相連 Bond
+                const idx1 = zhiOrder.indexOf(b1);
+                const idx2 = zhiOrder.indexOf(b2);
+                if (idx1 !== -1 && idx2 !== -1) {
+                    if ((idx2 - idx1 + 12) % 12 === 1 || (idx1 - idx2 + 12) % 12 === 1) {
+                        const key = `neighbor_${i}_${j}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            results.push({
+                                type: 'neighbor',
+                                indices: [i, j],
+                                hiddenBranch: null
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 2. 檢查間隔地支對
             for (let i = 0; i < N; i++) {
                 for (let j = i + 1; j < N; j++) {
                     const b1 = branches[i];
                     const b2 = branches[j];
 
+                    // 三合暗拱
                     for (const [targetHidden, pair] of Object.entries(sanHeGong)) {
                         if ((b1 === pair[0] && b2 === pair[1]) || (b1 === pair[1] && b2 === pair[0])) {
                             const key = `${i}_${j}_${targetHidden}`;
@@ -763,7 +824,8 @@
                         }
                     }
 
-                    if (b1 === b2) {
+                    // 兩地支相同但「非緊貼」（隔位，j > i + 1）時，暗拱六合之支
+                    if (b1 === b2 && j > i + 1) {
                         const partner = getSixRelPartner(b1);
                         if (partner) {
                             const key = `${i}_${j}_${partner}`;
@@ -778,6 +840,7 @@
                         }
                     }
 
+                    // 暗夾中間地支 (Distance 2)
                     const idx1 = zhiOrder.indexOf(b1);
                     const idx2 = zhiOrder.indexOf(b2);
                     if (idx1 !== -1 && idx2 !== -1) {
@@ -815,11 +878,10 @@
 
         function renderInvisibleBranchRelationships(branches, headers) {
             const container = document.getElementById('invisibleBranchRelContainer');
-            if (!container) return;
+            if (!container) return;  
 
             let rels = findInvisibleBranchRelationships(branches);
 
-            // Filter out any invisible branch relationship involving 命宮
             if (headers) {
                 rels = rels.filter(rel => !rel.indices.some(idx => headers[idx] === "命宮" || headers[idx] === "胎元" || headers[idx] === "胎息" || headers[idx] === "身宮"));
             }
@@ -846,11 +908,12 @@
             const xCoords = Array.from({length: N}, (_, i) => 45 + i * 98);
             const viewBoxWidth = N * 90 + (N - 1) * 8;
             const layerHeight = 45;
-            const totalHeight = rels.length * layerHeight + 8;
+
+            const { packedRels, totalLayers } = packRelationships(rels, xCoords, 12);
+            const totalHeight = totalLayers * layerHeight + 8;
 
             let svgHtml = `<svg width="100%" height="${totalHeight}" viewBox="0 0 ${viewBoxWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
-            // --- NEW SEPARATOR LOGIC ---
             if (isSplitMode && headers) {
                 let targetIdx = headers.indexOf("元運");
                 if (targetIdx === -1) {
@@ -862,33 +925,81 @@
                     svgHtml += `<line x1="${splitX}" y1="0" x2="${splitX}" y2="${totalHeight}" stroke="${lineColor}" stroke-width="1.5" stroke-dasharray="4,4" />`;
                 }
             }
-            // ---------------------------  
 
-            rels.forEach((rel, k) => {
-                const yTop = k * layerHeight + 6;
+            packedRels.forEach((rel, k) => {
+                const yTop = rel.layer * layerHeight + 6;
                 const yBar = yTop + 24;
 
-                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
-                const minX = xCoords[sortedIndices[0]];
-                const maxX = xCoords[sortedIndices[sortedIndices.length - 1]];
+                const minX = rel.minX;
+                const maxX = rel.maxX;
                 const midX = (minX + maxX) / 2;
 
-                let strokeColor = getRelColor(rel.color);
-                const boxSize = 26;
-                const boxX = midX - boxSize / 2;
-                const boxY = yBar - boxSize / 2;
+                const sortedIndices = [...rel.indices].sort((a, b) => a - b);
+                const leftBranch = branches[sortedIndices[0]];
+                const rightBranch = branches[sortedIndices[sortedIndices.length - 1]];
 
-                svgHtml += `<circle cx="${minX}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
-                svgHtml += `<circle cx="${maxX}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
+                const cLeft = getRelColor(getElementColor(leftBranch));
+                const cRight = getRelColor(getElementColor(rightBranch));
 
-                svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
-                svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
-                svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="2" />`;
-                svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="2" />`;
+                const gradId = `invBranchGrad_${k}`;
 
-                svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="2" />`;
+                svgHtml += `
+                    <defs>
+                        <linearGradient id="${gradId}" x1="${minX}" y1="0" x2="${maxX}" y2="0" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="${cLeft}" />
+                            <stop offset="50%" stop-color="${cLeft}" />
+                            <stop offset="50%" stop-color="${cRight}" />
+                            <stop offset="100%" stop-color="${cRight}" />
+                        </linearGradient>
+                    </defs>
+                `;
 
-                svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${strokeColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
+                const isSameNeighbor = (rel.type === 'same_neighbor');
+                const isNeighbor = (rel.type === 'neighbor');
+                const hasHiddenBranch = Boolean(rel.hiddenBranch && !isNeighbor);
+
+                let strokeWidth = 2;
+                if (isSameNeighbor) strokeWidth = 6;
+                else if (isNeighbor) strokeWidth = 3.5;
+
+                const strokeColor = isSameNeighbor ? cLeft : (hasHiddenBranch ? getRelColor(rel.color) : `url(#${gradId})`);
+
+                if (!hasHiddenBranch) {
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+
+                    sortedIndices.forEach(idx => {
+                        const x = rel.getX(idx);
+                        svgHtml += `<line x1="${x}" y1="${yTop + 2}" x2="${x}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                    });
+                } else {
+                    const boxSize = 26;
+                    const boxX = midX - boxSize / 2;
+                    const boxY = yBar - boxSize / 2;
+
+                    const cap = isSameNeighbor ? 'stroke-linecap="round"' : '';
+                    svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${cap} />`;
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${cap} />`;
+
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${isSameNeighbor ? 2.5 : strokeWidth}" />`;
+
+                    const branchTextColor = rel.color ? getRelColor(rel.color) : strokeColor;
+
+                    svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
+                }
+
+                if (!isSameNeighbor) {
+                    sortedIndices.forEach(idx => {
+                        const x = rel.getX(idx);
+                        const dotCol = getRelColor(getElementColor(branches[idx]));
+                        if (hasHiddenBranch) {
+                            svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
+                        } else {
+                            svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="5" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
+                        }
+                    });
+                }
             }); 
 
             svgHtml += `</svg>`;
