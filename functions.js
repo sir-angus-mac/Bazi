@@ -102,16 +102,19 @@ function packRelationships(rels, xCoords, offset = 12) {
     };
 } 
 
-// Function to handle the expanding/collapsing
 function toggleRelContainer(event, el) {
-    // If it is currently expanded, only collapse if the click target is exactly the border/padding
-    // This prevents collapsing when the user accidentally clicks on the SVG lines or text.
     if (!el.classList.contains('collapsed')) {
         if (event.target !== el) return;
     }
     
     el.classList.toggle('collapsed');
     relContainerStates[el.id] = el.classList.contains('collapsed');
+
+    // If collapsing the invisible branches container, clean up all active tooltips
+    if (el.id === 'invisibleBranchRelContainer' && el.classList.contains('collapsed')) {
+        document.querySelectorAll('.branch-hidden-popup').forEach(p => p.remove());
+        activeBranchPopups.clear();
+    }
 } 
 
 function getElement(char) {
