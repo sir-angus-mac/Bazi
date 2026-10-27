@@ -1504,9 +1504,9 @@
             '巳': '亥', '亥': '巳'
         };
 
-        function createArrow(fromElem, toElem, color, markerId, isBiDirectional = false) {
+        function createArrow(fromElem, toElem, color, markerId, isBiDirectional = false, opacity = 1) {
             const canvas = document.getElementById('arrowCanvas');
-            if (!canvas) return false;
+            if (!canvas) return false; 
 
             // Prevent any arrow from pointing to or originating from "合"
             if ((fromElem && fromElem.textContent.trim() === '合') || (toElem && toElem.textContent.trim() === '合')) {
@@ -1540,8 +1540,9 @@
 
             const adjustedDistance = Math.hypot(adjustedEndX - adjustedStartX, adjustedEndY - adjustedStartY);
 
-            // 1. Wrap in a <g> container
+            // 1. Wrap in a <g> container with initial opacity
             const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            group.style.opacity = opacity;
 
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", adjustedStartX);
@@ -1571,16 +1572,16 @@
                 }
             };
 
-            // 4. Animate opacity on the GROUP (<g>) so line and marker fade out together
+            // 4. Animate opacity on the GROUP (<g>) starting from the designated opacity
             group.animate([
-                { opacity: 1 },
+                { opacity: opacity },
                 { opacity: 0 }
             ], { duration: 500, delay: 1500, easing: 'ease-out', fill: 'forwards' });
 
             // 5. Remove the entire group node from DOM
             setTimeout(() => group.remove(), 2100);
             return true;
-        } 
+        }
 
         function drawXingArrows(sourceElement, char) {
             const canvas = document.getElementById('arrowCanvas');
@@ -1655,7 +1656,7 @@
             return arrowsDrawnCount;
         }
 
-        function triggerArrows(clickedElement, sourceChar, originBranchElem = null, suppressCross = false) { 
+        function triggerArrows(clickedElement, sourceChar, originBranchElem = null, suppressCross = false, arrowOpacity = 1) { 
             const canvas = document.getElementById('arrowCanvas');
             if (!canvas) return 0;  
 
@@ -1713,25 +1714,24 @@
 
                 // 偏財: Clicked stem -> 偏財 stem (Orange arrow)
                 if (targetPianCaiChar && targetText === targetPianCaiChar) {
-                    if (createArrow(clickedElement, target, "orange", "arrowhead-piancai")) {
+                    if (createArrow(clickedElement, target, "orange", "arrowhead-piancai", false, arrowOpacity)) {
                         arrowsDrawnCount++;
                     }
                 }
 
                 // 七殺: 七殺 stem -> Clicked stem (Greenish-Yellow arrow)
                 if (sourceQiShaChar && targetText === sourceQiShaChar) {
-                    if (createArrow(target, clickedElement, "#adff2f", "arrowhead-qisha")) {
+                    if (createArrow(target, clickedElement, "#adff2f", "arrowhead-qisha", false, arrowOpacity)) {
                         arrowsDrawnCount++;
                     }
                 }
             });
 
             // 2. Search / Summon Invisible Branches:
-            // ONLY executed if the invisible branch container is currently OPEN!
             if ((isRow1BottomStem || isPopupStem) && isInvBranchContainerOpen) {
                 const invisibleBranches = document.querySelectorAll('#invisibleBranchRelContainer text.spawned-branch');
                 invisibleBranches.forEach(branchElem => {
-                    if (branchElem === originBranchElem) return; // Avoid self-connecting
+                    if (branchElem === originBranchElem) return;
 
                     const bChar = branchElem.textContent.trim();
                     const primaryStem = getBranchPrimaryStem(bChar);
@@ -1741,21 +1741,20 @@
                     const isQiSha = (sourceQiShaChar && primaryStem === sourceQiShaChar);
 
                     if (isPianCai || isQiSha) {
-                        // Summon the branch popup!
                         const popupData = spawnBranchHiddenPopup(branchElem, bChar);
                         if (popupData && popupData.stemElements[primaryStem]) {
                             const hElem = popupData.stemElements[primaryStem];
 
                             // 偏財: Clicked stem -> Popup stem (Orange)
                             if (isPianCai) {
-                                if (createArrow(clickedElement, hElem, "orange", "arrowhead-piancai")) {
+                                if (createArrow(clickedElement, hElem, "orange", "arrowhead-piancai", false, arrowOpacity)) {
                                     arrowsDrawnCount++;
                                 }
                             }
 
                             // 七殺: Popup stem -> Clicked stem (Greenish-Yellow)
                             if (isQiSha) {
-                                if (createArrow(hElem, clickedElement, "#adff2f", "arrowhead-qisha")) {
+                                if (createArrow(hElem, clickedElement, "#adff2f", "arrowhead-qisha", false, arrowOpacity)) {
                                     arrowsDrawnCount++;
                                 }
                             }
@@ -1764,13 +1763,13 @@
                 });
             }
 
-            // 3. If no connections found within the allowed group, show X animation (unless suppressed)
+            // 3. Show X animation if no connections
             if (arrowsDrawnCount === 0 && !suppressCross) {
                 drawXAnimation(clickedElement);
             }
 
             return arrowsDrawnCount;
-        }
+        } 
 
         function renderLiushiBar() {
             const bar = document.getElementById('liushiBar');
@@ -2257,49 +2256,49 @@
             renderRelationships(branches);
 
             document.querySelectorAll('.main-pillar-branch, .time-pillar-branch, text.spawned-branch').forEach(branchElem => {
-                branchElem.onclick = function(event) { 
+                branchElem.onclick = function(event) {  
                     event.stopPropagation(); 
                     const branchChar = this.textContent.trim();
 
-                    // 1. Check Branch Six Clashes (地支六沖)
+                    // 1. Check Branch Six Clashes (地支六沖) at 100% opacity
                     const chongCount = triggerDizhiArrows(this, branchChar, true);
 
-                    // 2. Check Branch Punishments (地支相刑) - both incoming & outgoing purple arrows
+                    // 2. Check Branch Punishments (地支相刑) at 100% opacity
                     const xingCount = drawXingArrows(this, branchChar);
 
-                    // 3. For spawned invisible branches, toggle popup and count its arrows
+                    // 3. For spawned invisible branches, toggle popup
                     let popupArrows = 0;
                     if (this.classList.contains('spawned-branch')) {
                         popupArrows = toggleBranchHiddenStems(this, branchChar);
                     }
 
-                    // 4. Automatically trigger bottom tenkan words (hidden stems) for this pillar
+                    // 4. Automatically trigger bottom tenkan words at 30% opacity (0.3)
                     let row1Arrows = 0;
                     let row2Arrows = 0;
                     const colIdx = this.getAttribute('data-col');
 
                     if (colIdx !== null) {
-                        // Row 1: The first/primary hidden stem (本氣)
+                        // Row 1: The first/primary hidden stem (本氣) -> 100% solid (opaque)
                         const r1 = document.getElementById(`rect_h_r1_c${colIdx}`);
                         if (r1) {
                             const r1Stems = r1.querySelectorAll('.stem-char');
                             r1Stems.forEach(stemSpan => {
                                 const stemChar = stemSpan.textContent.trim();
                                 if (stemChar && stemChar !== '合') {
-                                    const count = triggerArrows(stemSpan, stemChar, null, true);
+                                    const count = triggerArrows(stemSpan, stemChar, null, true, 1.0); // <--- set to 1.0
                                     row1Arrows += (count || 0);
                                 }
                             });
-                        }
+                        } 
 
-                        // Row 2: The last two or one hidden stems (中氣 / 餘氣)
+                        // Row 2: The last two or one hidden stems (中氣 / 餘氣) -> 30% opacity
                         const r2 = document.getElementById(`rect_h_r2_c${colIdx}`);
                         if (r2) {
                             const r2Stems = r2.querySelectorAll('.stem-char');
                             r2Stems.forEach(stemSpan => {
                                 const stemChar = stemSpan.textContent.trim();
                                 if (stemChar && stemChar !== '合') {
-                                    const count = triggerArrows(stemSpan, stemChar, null, true);
+                                    const count = triggerArrows(stemSpan, stemChar, null, true, 0.3);
                                     row2Arrows += (count || 0);
                                 }
                             });
@@ -2308,23 +2307,11 @@
 
                     // 5. Cross (X) Decision Logic:
                     if (this.classList.contains('spawned-branch')) {
-                        // --- INVISIBLE BRANCH ---
-                        // Does NOT draw cross if:
-                        // 1. Its popup tenkan pointed to something / was pointed at (popupArrows > 0)
-                        // 2. Points a purple arrow OR gets pointed at by a purple arrow (xingCount > 0)
-                        // 3. Has a clash (chongCount > 0)
                         const totalInvisibleConnections = (chongCount || 0) + (xingCount || 0) + (popupArrows || 0);
                         if (totalInvisibleConnections === 0) {
                             drawXAnimation(this);
                         }
                     } else {
-                        // --- PILLAR EARTHLY STEM/BRANCH ---
-                        // Does NOT draw cross if:
-                        // 1. Points a purple arrow OR gets pointed at by a purple arrow (xingCount > 0)
-                        // 2. Has a clash (chongCount > 0)
-                        // 3. Its FIRST bottom tenkan (Row 1 / 本氣) pointed to something (row1Arrows > 0)
-                        //
-                        // If ONLY the last two or one bottom tenkans (Row 2) pointed to something, IT DOES DRAW A CROSS!
                         const hasSolidBranchConnection = (xingCount > 0) || (chongCount > 0) || (row1Arrows > 0);
 
                         if (!hasSolidBranchConnection) {
