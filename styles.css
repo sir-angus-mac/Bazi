@@ -219,7 +219,14 @@ body {
 .stem-char {
     font-size: 22px;
     font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.1s ease;
 }
+
+.stem-char:hover {
+    transform: scale(1.15); /* Gives a subtle indicator on hover */
+} 
 .god-text {
     font-size: 22px;
     font-weight: 400;
@@ -369,3 +376,53 @@ body {
     border: 2px solid #d4ac0d; /* Golden outline matching Ming Gong theme */
     background-color: var(--sel-minggong-bg);
 }  
+
+
+/* Vertical Extension Popup for Invisible Branch Hidden Stems */
+.branch-hidden-popup {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 4px 10px var(--shadow);
+    padding: 2px 4px 5px 4px;
+    z-index: 1000;
+    pointer-events: auto;
+    min-width: 26px;
+    box-sizing: border-box;
+    transition: opacity 0.4s ease;
+}
+
+.branch-hidden-popup.fading {
+    opacity: 0;
+}
+
+.branch-hidden-popup .popup-divider {
+    width: 100%;
+    border-top: 1.5px dashed var(--border-color);
+    margin: 2px 0 3px 0;
+    opacity: 0.7;
+}
+
+.branch-hidden-popup .popup-stems {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.branch-hidden-popup .popup-stem {
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1.15;
+    user-select: none;
+    transition: transform 0.1s ease;
+}
+
+.branch-hidden-popup .popup-stem:hover {
+    transform: scale(1.25);
+}

@@ -98,6 +98,136 @@
         let isTaiyuanActive = false;
         let taiyuanBarVisible = false;
 
+        // Active popups map so we can reset timers if summoned repeatedly
+        const activeBranchPopups = new Map();
+
+        // Helper: Get ONLY the first (primary / 本氣) hidden stem of a branch
+        function getBranchPrimaryStem(branchChar) {
+            const stems = deizi_hidden_tenkan[branchChar];
+            return (stems && stems.length > 0) ? stems[0] : null;
+        } 
+
+        function spawnBranchHiddenPopup(branchElem, branchChar) {
+            const primaryStem = getBranchPrimaryStem(branchChar);
+            if (!branchElem || !primaryStem) return null;
+
+            // If already active, refresh the 3-second timer
+            if (activeBranchPopups.has(branchElem)) {
+                const existing = activeBranchPopups.get(branchElem);
+                clearTimeout(existing.timer);
+                clearTimeout(existing.fadeTimer);
+                existing.popup.classList.remove('fading');
+                
+                existing.fadeTimer = setTimeout(() => existing.popup.classList.add('fading'), 2600);
+                existing.timer = setTimeout(() => {
+                    existing.popup.remove();
+                    activeBranchPopups.delete(branchElem);
+                }, 3000);
+                return existing;
+            }
+
+            const rect = branchElem.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.className = 'branch-hidden-popup';
+            popup.style.left = `${rect.left + rect.width / 2}px`;
+            popup.style.top = `${rect.bottom + 6}px`;
+            popup.style.transform = 'translateX(-50%)';
+
+            const divider = document.createElement('div');
+            divider.className = 'popup-divider';
+            popup.appendChild(divider);
+
+            const stemList = document.createElement('div');
+            stemList.className = 'popup-stems';
+
+            const stemElements = {};
+
+            // ONLY display the single first hidden stem!
+            const span = document.createElement('span');
+            span.className = 'stem-char popup-stem';
+            span.style.color = getElementColor(primaryStem);
+            span.textContent = primaryStem;
+            span.onclick = function(e) {
+                e.stopPropagation();
+                triggerArrows(this, primaryStem, branchElem);
+            };
+            stemList.appendChild(span);
+            stemElements[primaryStem] = span;
+
+            popup.appendChild(stemList);
+            document.body.appendChild(popup);
+
+            // 3-second timer with smooth fade out
+            const fadeTimer = setTimeout(() => popup.classList.add('fading'), 2600);
+            const timer = setTimeout(() => {
+                popup.remove();
+                activeBranchPopups.delete(branchElem);
+            }, 3000);
+
+            const popupData = { popup, stemElements, primaryStem, timer, fadeTimer };
+            activeBranchPopups.set(branchElem, popupData);
+
+            return popupData;
+        }
+
+        function toggleBranchHiddenStems(branchElem, branchChar) {
+            const popupData = spawnBranchHiddenPopup(branchElem, branchChar);
+            if (!popupData) return; 
+
+            const primaryStem = popupData.primaryStem;
+            const hElem = popupData.stemElements[primaryStem];
+            if (!hElem) return;
+
+            const targetPianCai = pianCaiDict[primaryStem];
+            const sourceQiSha = qiShaDict[primaryStem];
+
+            // 1. Search Bottom Tenkans (ONLY Row 1 / First-level tenkans, NEVER Row 2!)
+            const bottomStems = document.querySelectorAll('[id^="rect_h_r1"] .stem-char');
+            bottomStems.forEach(bElem => {
+                const bChar = bElem.textContent.trim();
+                if (bChar === '合') return;
+
+                // 偏財: Popup stem -> Bottom Row 1 stem (Orange)
+                if (targetPianCai && bChar === targetPianCai) {
+                    createArrow(hElem, bElem, "orange", "arrowhead-piancai");
+                }
+                // 七殺: Bottom Row 1 stem -> Popup stem (Greenish-Yellow)
+                if (sourceQiSha && bChar === sourceQiSha) {
+                    createArrow(bElem, hElem, "#adff2f", "arrowhead-qisha");
+                }
+            });
+
+            // 2. Search OTHER Invisible Branches (Popup <-> Popup interaction!)
+            const allInvisibleBranches = document.querySelectorAll('#invisibleBranchRelContainer text.spawned-branch');
+            allInvisibleBranches.forEach(otherBranchElem => {
+                if (otherBranchElem === branchElem) return; // Don't self-connect
+
+                const otherBChar = otherBranchElem.textContent.trim();
+                const otherPrimaryStem = getBranchPrimaryStem(otherBChar);
+                if (!otherPrimaryStem) return;
+
+                const isPianCai = (targetPianCai && otherPrimaryStem === targetPianCai);
+                const isQiSha = (sourceQiSha && otherPrimaryStem === sourceQiSha);
+
+                if (isPianCai || isQiSha) {
+                    // Summon the other popup!
+                    const otherPopup = spawnBranchHiddenPopup(otherBranchElem, otherBChar);
+                    if (otherPopup && otherPopup.stemElements[otherPrimaryStem]) {
+                        const otherHElem = otherPopup.stemElements[otherPrimaryStem];
+
+                        // 偏財: this popup -> other popup (Orange)
+                        if (isPianCai) {
+                            createArrow(hElem, otherHElem, "orange", "arrowhead-piancai");
+                        }
+                        // 七殺: other popup -> this popup (Greenish-Yellow)
+                        if (isQiSha) {
+                            createArrow(otherHElem, hElem, "#adff2f", "arrowhead-qisha");
+                        }
+                    }
+                }
+            });
+        }
+
         function calculateTaiyuan() {  
             if (!currentBaziData) return null;
 
@@ -986,8 +1116,8 @@
 
                     const branchTextColor = rel.color ? getRelColor(rel.color) : strokeColor;
 
-                    svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
-                }
+                    svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}'); toggleBranchHiddenStems(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
+                } 
 
                 if (!isSameNeighbor) {
                     sortedIndices.forEach(idx => {
@@ -1497,37 +1627,57 @@
             }
         }
 
-        function triggerArrows(clickedElement, sourceChar) { 
+        function triggerArrows(clickedElement, sourceChar, originBranchElem = null) { 
             const canvas = document.getElementById('arrowCanvas');
-            if (!canvas) return;
+            if (!canvas) return;   
 
             // Do nothing if the clicked element itself is "合"
             if (clickedElement && clickedElement.textContent.trim() === '合') {
                 return;
-            }
+            } 
 
             const targetPianCaiChar = pianCaiDict[sourceChar];
             const sourceQiShaChar = qiShaDict[sourceChar];
 
-            const possibleTargets = document.querySelectorAll('.main-pillar-stem, #invisibleStemRelContainer text.spawned-stem');
+            // Identify which exact tier the clicked element belongs to:
+            const isRow2BottomStem = clickedElement.closest('[id^="rect_h_r2"]') !== null;
+            const isRow1BottomStem = clickedElement.closest('[id^="rect_h_r1"]') !== null;
+            const isPopupStem = clickedElement.classList.contains('popup-stem');
+
+            let targetSelector = '';
+
+            if (isRow2BottomStem) {
+                // Row 2 ("bottom two tenkans"): ONLY point arrows at other Row 2 stems!
+                targetSelector = '[id^="rect_h_r2"] .stem-char';
+            } else if (isRow1BottomStem) {
+                // Row 1 ("bottom first level tenkans"): points to other Row 1 stems
+                targetSelector = '[id^="rect_h_r1"] .stem-char';
+            } else if (isPopupStem) {
+                // Popup stem: can interact with Row 1 stems and other popup stems
+                targetSelector = '[id^="rect_h_r1"] .stem-char, .popup-stem';
+            } else {
+                // Main pillar stems and top invisible stems
+                targetSelector = '.main-pillar-stem, #invisibleStemRelContainer text.spawned-stem';
+            }
+
+            const possibleTargets = document.querySelectorAll(targetSelector);
             let arrowsDrawnCount = 0;
 
+            // 1. Search strictly within the isolated target group
             possibleTargets.forEach(target => {
                 if (target === clickedElement) return;
 
                 const targetText = target.textContent.trim();
-
-                // Skip any target displaying "合"
                 if (targetText === '合') return;
 
-                // 1. 偏財: Clicked stem -> 偏財 stem (Orange arrow)
+                // 偏財: Clicked stem -> 偏財 stem (Orange arrow)
                 if (targetPianCaiChar && targetText === targetPianCaiChar) {
                     if (createArrow(clickedElement, target, "orange", "arrowhead-piancai")) {
                         arrowsDrawnCount++;
                     }
                 }
 
-                // 2. 七殺: 七殺 stem -> Clicked stem (Greenish-Yellow arrow)
+                // 七殺: 七殺 stem -> Clicked stem (Greenish-Yellow arrow)
                 if (sourceQiShaChar && targetText === sourceQiShaChar) {
                     if (createArrow(target, clickedElement, "#adff2f", "arrowhead-qisha")) {
                         arrowsDrawnCount++;
@@ -1535,11 +1685,49 @@
                 }
             });
 
-            // 3. If neither 偏財 nor 七殺 is present on screen, show X animation
+            // 2. Search / Summon Invisible Branches:
+            // ONLY allowed for Row 1 stems and Popup stems! Row 2 stems CANNOT summon or interact with them.
+            if (isRow1BottomStem || isPopupStem) {
+                const invisibleBranches = document.querySelectorAll('#invisibleBranchRelContainer text.spawned-branch');
+                invisibleBranches.forEach(branchElem => {
+                    if (branchElem === originBranchElem) return; // Avoid self-connecting
+
+                    const bChar = branchElem.textContent.trim();
+                    const primaryStem = getBranchPrimaryStem(bChar);
+                    if (!primaryStem) return;
+
+                    const isPianCai = (targetPianCaiChar && primaryStem === targetPianCaiChar);
+                    const isQiSha = (sourceQiShaChar && primaryStem === sourceQiShaChar);
+
+                    if (isPianCai || isQiSha) {
+                        // Summon the branch popup!
+                        const popupData = spawnBranchHiddenPopup(branchElem, bChar);
+                        if (popupData && popupData.stemElements[primaryStem]) {
+                            const hElem = popupData.stemElements[primaryStem];
+
+                            // 偏財: Clicked stem -> Popup stem (Orange)
+                            if (isPianCai) {
+                                if (createArrow(clickedElement, hElem, "orange", "arrowhead-piancai")) {
+                                    arrowsDrawnCount++;
+                                }
+                            }
+
+                            // 七殺: Popup stem -> Clicked stem (Greenish-Yellow)
+                            if (isQiSha) {
+                                if (createArrow(hElem, clickedElement, "#adff2f", "arrowhead-qisha")) {
+                                    arrowsDrawnCount++;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. If no connections found within the allowed group, show X animation
             if (arrowsDrawnCount === 0) {
                 drawXAnimation(clickedElement);
             }
-        } 
+        }
 
         function renderLiushiBar() {
             const bar = document.getElementById('liushiBar');
@@ -1575,6 +1763,9 @@
         }
 
         function renderGrid() {
+            document.querySelectorAll('.branch-hidden-popup').forEach(p => p.remove());
+            activeBranchPopups.clear();
+            
             renderMinggongBar();
             renderTaiyuanBar();
             renderTaixiBar();
@@ -2028,8 +2219,11 @@
                     const branchChar = this.textContent.trim();
                     triggerDizhiArrows(this, branchChar);
                     drawXingArrows(this, branchChar); 
+                    if (this.classList.contains('spawned-branch')) {
+                        toggleBranchHiddenStems(this, branchChar);
+                    }
                 };
-            }); 
+            });
         } 
 
         document.addEventListener("DOMContentLoaded", () => {

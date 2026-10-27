@@ -197,8 +197,8 @@ function calculateTenGod(targetChar, dayMasterChar) {
 function formatHiddenStemLine(stemChar, dayMasterChar) {
     const god = calculateTenGod(stemChar, dayMasterChar);
     const col = getElementColor(stemChar);
-    return `<div class="hidden-stem-line"><span class="stem-char" style="color:${col}">${stemChar}</span><span class="god-text">${god}</span></div>`;
-}
+    return `<div class="hidden-stem-line"><span class="stem-char" style="color:${col}" onclick="event.stopPropagation(); triggerArrows(this, '${stemChar}')">${stemChar}</span><span class="god-text">${god}</span></div>`;
+} 
 
 function findStemRelationships(stems) {
     const results = [];
