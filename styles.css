@@ -70,14 +70,7 @@ body {
     flex-wrap: wrap;
     font-size: 13px;
 }
-.controls-bar select {
-    font-size: 13px;
-    padding: 2px 4px;
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
+
 .btn-dayun {
     font-size: 13px;
     padding: 3px 8px;
@@ -221,8 +214,17 @@ body {
     font-weight: 400;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.1s ease;
-}
+    /* Forces an exact square and centers the character */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: 2px solid transparent; /* Prevents text from shifting when highlighted */
+    transition: transform 0.1s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+} 
 
 .stem-char:hover {
     transform: scale(1.15); /* Gives a subtle indicator on hover */
@@ -418,11 +420,94 @@ body {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    line-height: 1.15;
     user-select: none;
-    transition: transform 0.1s ease;
-}
+    /* Square for popup */
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+} 
 
 .branch-hidden-popup .popup-stem:hover {
     transform: scale(1.25);
 }
+
+/* 1. Enlarged Select Dropdowns */
+.controls-bar select {
+    font-size: 16px;          /* Size of the numbers inside the select (was 13px) */
+    font-weight: bold;        /* Makes numbers clearer */
+    padding: 4px 6px;         /* Adds height and width padding */
+    height: 34px;             /* Sets a clear matching height */
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1.5px solid var(--border-color);
+    border-radius: 4px;
+}
+
+/* 2. Enlarged Stepper Group & Characters (年, 月, 日, 時, 命) */
+.stepper-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;                 /* Space between arrows, select box, and text */
+    vertical-align: middle;
+    font-size: 16px;          /* Makes '年', '月', '日', '時', '命' larger (was 13px) */
+    font-weight: 700;         /* Makes the characters bold and readable */
+}
+
+.stepper-btns {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+/* 3. Enlarged Arrow Buttons (▲ / ▼) */
+.btn-step {
+    padding: 0;
+    margin: 0;
+    width: 24px;              /* Button width (was 17px) */
+    height: 15px;             /* Button height (was 11px) */
+    font-size: 11px;          /* Size of the ▲ and ▼ triangles (was 7px) */
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1.5px solid var(--border-color);
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s, transform 0.05s;
+}
+
+.btn-step:hover {
+    background-color: var(--card-hover);
+}
+
+.btn-step:active {
+    opacity: 0.6;
+    transform: scale(0.95);
+} 
+
+/* --- 人元司令 Dynamic Element Highlight Square --- */
+/* 1. Main pillar stem square */
+.bazi-square.renyuan-highlight-square {
+    box-shadow: 0 0 0 3px var(--renyuan-color, #ffd700) !important;
+    border-color: var(--renyuan-color, #ffd700) !important;
+}
+
+/* 2. Hidden stem characters in bottom boxes - Clean border without glow */
+.stem-char.renyuan-highlight-hidden {
+    border-color: var(--renyuan-color, #ffd700) !important;
+    box-shadow: none !important;
+    background-color: transparent !important; /* Removes any tinted background */
+} 
+
+/* 3. SVG invisible stem square rect */
+.renyuan-svg-rect-highlight {
+    stroke: var(--renyuan-color, #ffd700) !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 3px var(--renyuan-color, #ffd700));
+} 

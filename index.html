@@ -20,17 +20,57 @@
     <div class="controls-bar">
         <button id="themeToggleBtn" class="btn-dayun btn-theme">☀️</button>
         <button id="nowBtn" class="btn-dayun">Now</button>
-        <select id="yearSelect"></select> 年
-        <select id="monthSelect"></select> 月
-        <select id="daySelect"></select> 日
-        <select id="hourSelect"></select> 時
-        <select id="sexSelect">
-            <option value="0">男</option>
-            <option value="1">女</option>
-        </select> 命
+        <!-- Year with Stepper -->
+        <div class="stepper-group">
+            <div class="stepper-btns">
+                <button type="button" class="btn-step" onclick="stepValue('year', -1)">▲</button>
+                <button type="button" class="btn-step" onclick="stepValue('year', 1)">▼</button>
+            </div>
+            <select id="yearSelect"></select> 年
+        </div>
+
+        <!-- Month with Stepper -->
+        <div class="stepper-group">
+            <div class="stepper-btns">
+                <button type="button" class="btn-step" onclick="stepValue('month', -1)">▲</button>
+                <button type="button" class="btn-step" onclick="stepValue('month', 1)">▼</button>
+            </div>
+            <select id="monthSelect"></select> 月
+        </div>
+
+        <!-- Day with Stepper -->
+        <div class="stepper-group">
+            <div class="stepper-btns">
+                <button type="button" class="btn-step" onclick="stepValue('day', -1)">▲</button>
+                <button type="button" class="btn-step" onclick="stepValue('day', 1)">▼</button>
+            </div>
+            <select id="daySelect"></select> 日
+        </div>
+
+        <!-- Hour with Stepper -->
+        <div class="stepper-group">
+            <div class="stepper-btns">
+                <button type="button" class="btn-step" onclick="stepValue('hour', -1)">▲</button>
+                <button type="button" class="btn-step" onclick="stepValue('hour', 1)">▼</button>
+            </div>
+            <select id="hourSelect"></select> 時
+        </div>
+
+        <!-- Sex with Stepper -->
+        <div class="stepper-group">
+            <div class="stepper-btns">
+                <button type="button" class="btn-step" onclick="stepValue('sex', -1)">▲</button>
+                <button type="button" class="btn-step" onclick="stepValue('sex', 1)">▼</button>
+            </div>
+            <select id="sexSelect">
+                <option value="0">男</option>
+                <option value="1">女</option>
+            </select> 命
+        </div> 
         <button id="disableTimeBtn" class="btn-dayun">Disable Time</button> 
         <button id="hehuaBtn" class="btn-dayun">Enable 合化</button> 
         <button id="splitBtn" class="btn-dayun">Combine</button>
+        <button id="renyuanBtn" class="btn-dayun">人元司令</button>
         <button id="minggongBtn" class="btn-dayun">命宮</button>
         <button id="taiyuanBtn" class="btn-dayun">胎元</button>
         <button id="taixiBtn" class="btn-dayun">胎息</button> 
@@ -104,6 +144,110 @@
     <pre id="errorResult" style="color: red; margin-top: 10px; font-size: 13px;"></pre>
 
     <script>
+        /**
+         * Step values with cascading calendar carries and borrows
+         * @param {string} field - 'year' | 'month' | 'day' | 'hour' | 'sex'
+         * @param {number} dir - (-1 for earlier, +1 for next)
+         */
+        function stepValue(field, dir) {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            const hourSelect = document.getElementById('hourSelect');
+            const sexSelect = document.getElementById('sexSelect');
+
+            if (field === 'sex') {
+                sexSelect.value = sexSelect.value === "0" ? "1" : "0";
+                // Trigger change to recalculate
+                sexSelect.dispatchEvent(new Event('change'));
+                return;
+            }
+
+            let yr = parseInt(yearSelect.value, 10);
+            let mth = parseInt(monthSelect.value, 10);
+            let dy = parseInt(daySelect.value, 10);
+            let hr = parseInt(hourSelect.value, 10);
+
+            const getDaysInMonth = (y, m) => new Date(y, m, 0).getDate();
+
+            // 1. Step Hour (-1: earlier, +1: next)
+            if (field === 'hour') {
+                hr += dir;
+                if (hr < 0) {
+                    hr = 23;
+                    dy -= 1; // Borrow from day
+                } else if (hr > 23) {
+                    hr = 0;
+                    dy += 1; // Carry to day
+                }
+            }
+
+            // 2. Step Day (or cascade from hour)
+            if (field === 'day' || field === 'hour') {
+                if (field === 'day') dy += dir;
+
+                // Handle Day Underflow (moving into previous months/years)
+                while (dy < 1) {
+                    mth -= 1;
+                    if (mth < 1) {
+                        mth = 12;
+                        yr -= 1;
+                    }
+                    dy += getDaysInMonth(yr, mth);
+                }
+
+                // Handle Day Overflow (moving into next months/years)
+                while (dy > getDaysInMonth(yr, mth)) {
+                    dy -= getDaysInMonth(yr, mth);
+                    mth += 1;
+                    if (mth > 12) {
+                        mth = 1;
+                        yr += 1;
+                    }
+                }
+            }
+
+            // 3. Step Month
+            if (field === 'month') {
+                mth += dir;
+                if (mth < 1) {
+                    mth = 12;
+                    yr -= 1;
+                } else if (mth > 12) {
+                    mth = 1;
+                    yr += 1;
+                }
+                // Clamp day to valid days in the new month
+                const maxD = getDaysInMonth(yr, mth);
+                if (dy > maxD) dy = maxD;
+            }
+
+            // 4. Step Year
+            if (field === 'year') {
+                yr += dir;
+                // Handle leap year adjustment (e.g. Feb 29 -> Feb 28)
+                const maxD = getDaysInMonth(yr, mth);
+                if (dy > maxD) dy = maxD;
+            }
+
+            // Keep year within the allowed range (1600 - 2100)
+            yr = Math.max(1600, Math.min(2100, yr));
+
+            // Apply values to UI
+            yearSelect.value = yr;
+            monthSelect.value = mth;
+            
+            // Re-populate and select proper day count 
+            if (typeof updateDays === 'function') {
+                updateDays(dy);
+            }
+            daySelect.value = dy;
+            hourSelect.value = hr;
+
+            // Recalculate BaZi
+            daySelect.dispatchEvent(new Event('change'));
+        }
+
         /**
          * Headlessly calculates and logs 24 Solar Terms and Moon Phases to Console
          * @param {number} targetYear 
@@ -189,6 +333,273 @@
             console.groupEnd();
         }
 
+        let isRenyuanActive = false;
+        // 全局存儲與 Console 輸出 100% 同步的 26 個節氣完整列表
+        let verifiedSolarTermsList = [];   
+
+        /**
+         * 規範化節氣名稱（兼容繁簡體）
+         */
+        function normalizeJieqiName(name) {
+            if (!name) return "";
+            return name.trim()
+                .replace('穀雨', '谷雨')
+                .replace('小滿', '小满')
+                .replace('芒種', '芒种')
+                .replace('處暑', '处暑')
+                .replace('驚蟄', '惊蛰');
+        }
+
+        /**
+         * Headlessly calculates and logs 24 Solar Terms and Moon Phases to Console
+         * 同時直接構建 人元司令 專用的節氣精準日程表
+         */
+        function logSunAndMoonToConsole(targetYear) {
+            if (typeof submitYear !== 'function') {
+                console.warn("sunMoon_c.js is not loaded yet.");
+                return;
+            }
+
+            const hiddenYearInput = document.getElementById('year');
+            const yContent = document.getElementById('ycontent');
+            if (!hiddenYearInput || !yContent) return;
+
+            hiddenYearInput.value = targetYear;
+            try {
+                submitYear(2); // 2 = Simplified Chinese
+            } catch (e) {
+                console.error("Astronomical calculation error:", e);
+                return;
+            }
+
+            const tables = yContent.querySelectorAll('table');
+            if (tables.length < 2) return;
+
+            // --- Table 1: 月相 (Moon Phases) ---
+            const moonPhases = [];
+            const moonRows = tables[0].querySelectorAll('tr');
+            const moonHeaders = ['朔 (新月)', '上弦', '望 (满月)', '下弦'];
+
+            for (let i = 1; i < moonRows.length; i++) {
+                const cells = moonRows[i].children;
+                for (let c = 0; c < cells.length; c++) {
+                    const cell = cells[c];
+                    if (cell.hasAttribute('colspan')) continue;
+                    const text = cell.innerText.trim();
+                    if (text) {
+                        const parts = text.split('\n');
+                        moonPhases.push({
+                            '月相': moonHeaders[c] || '月相',
+                            '公历时刻': parts[0].replace(/,/g, ''),
+                            '交食备注': parts[1] || '无'
+                        });
+                    }
+                }
+            }
+
+            // --- Table 2: 二十四节气 (24 Solar Terms) ---
+            const solarTerms = [];
+            const solarRows = tables[1].querySelectorAll('tr');
+
+            for (let i = 1; i < solarRows.length; i++) {
+                const tds = solarRows[i].querySelectorAll('td');
+                if (tds[0] && tds[1] && tds[0].innerText.trim()) {
+                    solarTerms.push({
+                        '节气': tds[0].innerText.trim(),
+                        '时刻 (UTC+8)': tds[1].innerText.trim()
+                    });
+                }
+                if (tds[3] && tds[4] && tds[3].innerText.trim()) {
+                    solarTerms.push({
+                        '节气': tds[3].innerText.trim(),
+                        '时刻 (UTC+8)': tds[4].innerText.trim()
+                    });
+                }
+            }
+
+            // 核心修正：直接將 Console 表精準轉換為時間戳列表 (共 26 個，0 到 25)
+            verifiedSolarTermsList = [];
+            for (let k = 0; k < solarTerms.length; k++) {
+                const rawName = solarTerms[k]['节气'];
+                const timeStr = solarTerms[k]['时刻 (UTC+8)'];
+                const name = normalizeJieqiName(rawName);
+
+                const match = timeStr.match(/(?:\((\d{4})\)\s*)?(\d{1,2})月(\d{1,2})日/);
+                if (!match) continue;
+
+                let y = match[1] ? parseInt(match[1], 10) : targetYear;
+                // 若字串沒有括號年份：第 0 項必定為前一年冬至，第 25 項必定為次年小寒
+                if (!match[1]) {
+                    if (k === 0 && match[2] === '12') y = targetYear - 1;
+                    else if (k >= 24 && match[2] === '1') y = targetYear + 1;
+                }
+
+                const m = parseInt(match[2], 10);
+                const d = parseInt(match[3], 10);
+
+                verifiedSolarTermsList.push({
+                    name: name,
+                    year: y,
+                    month: m,
+                    day: d,
+                    date: new Date(y, m - 1, d), // 包含完整 Date 物件
+                    dayUTC: Date.UTC(y, m - 1, d) // 節氣公曆日 00:00:00 UTC 毫秒數
+                });
+            }
+
+            // 按時間嚴格排序
+            verifiedSolarTermsList.sort((a, b) => a.dayUTC - b.dayUTC);
+
+            // 輸出到 DevTools 控制台
+            console.group(`🌟 公元 ${targetYear} 年 月相与二十四节气时刻表`);
+            console.log(`%c【二十四节气】 (${targetYear})`, "color: #2b8a3e; font-weight: bold; font-size: 13px;");
+            console.table(solarTerms);
+            console.log(`%c【月相与日月食】 (${targetYear})`, "color: #1971c2; font-weight: bold; font-size: 13px;");
+            console.table(moonPhases);
+            console.groupEnd();
+        }
+
+        /**
+         * 計算當前人元司令天干 (X)、當前節氣 (YY) 以及 第幾日 (Z)
+         */
+        function calculateRenyuanSiling() {
+            const yr = parseInt(document.getElementById('yearSelect').value, 10);
+            const mth = parseInt(document.getElementById('monthSelect').value, 10);
+            const dy = parseInt(document.getElementById('daySelect').value, 10);
+            const hr = parseInt(document.getElementById('hourSelect').value, 10);
+
+            // 防禦保護：若尚未初始化則立即調用構建
+            if (!verifiedSolarTermsList || verifiedSolarTermsList.length === 0) {
+                logSunAndMoonToConsole(yr);
+            }
+            if (!verifiedSolarTermsList || verifiedSolarTermsList.length === 0) return null;
+
+            // 1. 子時換日判定：>= 23:00 換入次日
+            const isNextDayZiShi = (hr >= 23);
+            const effDate = new Date(yr, mth - 1, dy + (isNextDayZiShi ? 1 : 0));
+            const currentDayUTC = Date.UTC(effDate.getFullYear(), effDate.getMonth(), effDate.getDate());
+
+            // 2. 在與 Console 完全相同的 26 個節氣列表中比對當前節氣
+            let activeTerm = null;
+            for (let i = 0; i < verifiedSolarTermsList.length; i++) {
+                if (currentDayUTC >= verifiedSolarTermsList[i].dayUTC) {
+                    activeTerm = verifiedSolarTermsList[i];
+                } else {
+                    break; // 超過當前日期即退出
+                }
+            }
+
+            if (!activeTerm) {
+                activeTerm = verifiedSolarTermsList[0];
+            }
+
+            // 3. 計算第 Z 日（直接用 UTC 毫秒數相減求天數差，無時區誤差）
+            const dayDiff = Math.floor((currentDayUTC - activeTerm.dayUTC) / (24 * 60 * 60 * 1000));
+            
+            // Z 從 1 開始遞增
+            let Z = dayDiff + 1;
+            if (Z < 1) Z = 1;
+            if (Z > 16) Z = 16; // 第16日同第15日歌訣
+
+            // 4. 查表獲取司令天干 X（第16日按第15日歌訣用字）
+            const YY = activeTerm.name;
+            const pattern = renyuanDict[YY];
+            let X = "";
+            if (pattern) {
+                const charIdx = Math.min(Z, 15) - 1;
+                X = pattern[charIdx] || "";
+            }
+
+            return { X, YY, Z };
+        }
+
+        /**
+         * Highlights all matching commanding heavenly stems (人元司令) in yellow.
+         * Excludes selectable cards in dayun-scroll-containers.
+         */ 
+        function applyRenyuanHighlight() { 
+            // 1. Remove previous highlights
+            document.querySelectorAll('.renyuan-highlight-square').forEach(el => el.classList.remove('renyuan-highlight-square'));
+            document.querySelectorAll('.renyuan-highlight-hidden').forEach(el => el.classList.remove('renyuan-highlight-hidden'));
+            document.querySelectorAll('.renyuan-svg-rect-highlight').forEach(el => {
+                el.classList.remove('renyuan-svg-rect-highlight');
+                if (el.dataset.origStroke) el.setAttribute('stroke', el.dataset.origStroke);
+                if (el.dataset.origWidth) el.setAttribute('stroke-width', el.dataset.origWidth);
+            });
+
+            // 2. If 人元司令 is not active, stop here
+            if (!isRenyuanActive) return;
+
+            const res = calculateRenyuanSiling();
+            if (!res || !res.X) return;
+            const targetStem = res.X; // e.g., "丙", "己", "甲"
+
+            // --- Dynamic Color Assignment ---
+            const highlightColor = getElementColor(targetStem);
+            document.documentElement.style.setProperty('--renyuan-color', highlightColor);
+
+            // 3. Highlight Main Pillar Heavenly Stems
+            document.querySelectorAll('#baziGrid .bazi-square.main-pillar-stem').forEach(square => {
+                if (square.textContent.trim() === targetStem) {
+                    square.classList.add('renyuan-highlight-square');
+                }
+            });
+
+            // 4. Highlight Hidden Stems in the bottom rows (本氣 / 中氣 / 餘氣)
+            document.querySelectorAll('#baziGrid [id^="rect_h_r"] .stem-char').forEach(span => {
+                if (span.textContent.trim() === targetStem) {
+                    span.classList.add('renyuan-highlight-hidden');
+                }
+            });
+
+            // 5. Highlight Spawned Invisible Stems in the SVG container
+            document.querySelectorAll('#invisibleStemRelContainer text.spawned-stem').forEach(textElem => {
+                if (textElem.textContent.trim() === targetStem) {
+                    const prevRect = textElem.previousElementSibling;
+                    if (prevRect && prevRect.tagName.toLowerCase() === 'rect') {
+                        if (!prevRect.dataset.origStroke) {
+                            prevRect.dataset.origStroke = prevRect.getAttribute('stroke') || '';
+                            prevRect.dataset.origWidth = prevRect.getAttribute('stroke-width') || '';
+                        }
+                        prevRect.classList.add('renyuan-svg-rect-highlight');
+                        prevRect.setAttribute('stroke', highlightColor); // Changed from '#ffd700' to dynamic color
+                        prevRect.setAttribute('stroke-width', '3.5');
+                    }
+                }
+            });
+
+            // 6. Highlight any active popup stems (if opened)
+            document.querySelectorAll('.branch-hidden-popup .popup-stem').forEach(span => {
+                if (span.textContent.trim() === targetStem) {
+                    span.classList.add('renyuan-highlight-hidden');
+                }
+            });
+        }
+
+        /**
+         * 刷新按鈕文字
+         */
+        function updateRenyuanBtn() {
+            const btn = document.getElementById('renyuanBtn');
+            if (!btn) return;
+
+            if (!isRenyuanActive) {
+                btn.textContent = "人元司令";
+                btn.style.color = "";
+                btn.style.borderColor = "";
+                return;
+            }
+
+            const res = calculateRenyuanSiling();
+            if (res && res.X) {
+                btn.textContent = `${res.X}當令 (${res.YY}第${res.Z}日)`;
+                btn.style.color = getElementColor(res.X); // 自動套用該天干的五行色彩
+                btn.style.borderColor = getElementColor(res.X);
+            } else {
+                btn.textContent = "人元司令";
+            } 
+        }
+
         // Toggle state for 命宮
         let isMinggongActive = false; 
         let isHeHuaEnabled = false; 
@@ -257,6 +668,15 @@
             span.className = 'stem-char popup-stem';
             span.style.color = getElementColor(primaryStem);
             span.textContent = primaryStem;
+
+            // Add this: Check if this primary stem matches the commanding stem
+            if (isRenyuanActive) { 
+                const res = calculateRenyuanSiling();
+                if (res && res.X === primaryStem) {
+                    span.classList.add('renyuan-highlight-hidden');
+                }
+            }
+
             span.onclick = function(e) {
                 e.stopPropagation();
                 triggerArrows(this, primaryStem, branchElem);
@@ -2486,6 +2906,8 @@
                     }
                 };
             });
+
+            applyRenyuanHighlight();
         } 
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -2495,6 +2917,14 @@
             const hourSelect = document.getElementById('hourSelect');
             const sexSelect = document.getElementById('sexSelect');
             const splitBtn = document.getElementById('splitBtn'); 
+            const renyuanBtn = document.getElementById('renyuanBtn');
+            if (renyuanBtn) {
+                renyuanBtn.addEventListener('click', () => {
+                    isRenyuanActive = !isRenyuanActive;
+                    updateRenyuanBtn();
+                    applyRenyuanHighlight(); // <-- ADD THIS CALL
+                });
+            }
 
             disableTimeBtn.addEventListener('click', () => {
                 isTimeDisabled = !isTimeDisabled;
@@ -2717,6 +3147,7 @@
                         renderLiuriBar();
                         renderLiushiBar();
                         renderGrid();
+                        updateRenyuanBtn();  
                     }
                 } catch (e) {
                     console.error(e);
