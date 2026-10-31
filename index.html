@@ -12,6 +12,8 @@
     <script src="paipan.js" defer></script> 
     <script src="constants.js" defer></script>
     <script src="functions.js" defer></script>
+
+    <script src="https://ytliu0.github.io/ChineseCalendar/sunMoon_c.js"></script>
 </head> 
 <body> 
 
@@ -87,9 +89,106 @@
         </defs>
     </svg>
 
+    <!-- Hidden container for headless astronomical computations -->
+    <div id="sunMoon_headless_wrapper" style="display: none !important;" aria-hidden="true">
+        <input type="number" id="year">
+        <div id="err"></div>
+        <div id="ym1"></div>
+        <div id="ym1content"></div>
+        <h2 id="y"></h2>
+        <div id="ycontent"></div>
+        <div id="y1"></div>
+        <div id="y1content"></div>
+    </div>
+
     <pre id="errorResult" style="color: red; margin-top: 10px; font-size: 13px;"></pre>
 
     <script>
+        /**
+         * Headlessly calculates and logs 24 Solar Terms and Moon Phases to Console
+         * @param {number} targetYear 
+         */ 
+        function logSunAndMoonToConsole(targetYear) {
+            if (typeof submitYear !== 'function') {
+                console.warn("sunMoon_c.js is not loaded yet.");
+                return;
+            }
+
+            const hiddenYearInput = document.getElementById('year');
+            const yContent = document.getElementById('ycontent');
+            if (!hiddenYearInput || !yContent) return;
+
+            // 1. Set the year and trigger the astronomical calculator
+            hiddenYearInput.value = targetYear;
+            try {
+                submitYear(2); // 2 = Simplified Chinese
+            } catch (e) {
+                console.error("Astronomical calculation error:", e);
+                return;
+            }
+
+            // 2. Parse the generated tables from memory
+            const tables = yContent.querySelectorAll('table');
+            if (tables.length < 2) return;
+
+            // --- Table 1: 月相 (Moon Phases) ---
+            const moonPhases = [];
+            const moonRows = tables[0].querySelectorAll('tr');
+            const moonHeaders = ['朔 (新月)', '上弦', '望 (满月)', '下弦'];
+
+            for (let i = 1; i < moonRows.length; i++) {
+                const cells = moonRows[i].children;
+                for (let c = 0; c < cells.length; c++) {
+                    const cell = cells[c];
+                    // Skip empty/colspan placeholder cells
+                    if (cell.hasAttribute('colspan')) continue;
+
+                    const text = cell.innerText.trim();
+                    if (text) {
+                        const parts = text.split('\n');
+                        moonPhases.push({
+                            '月相': moonHeaders[c] || '月相',
+                            '公历时刻': parts[0].replace(/,/g, ''),
+                            '交食备注': parts[1] || '无'
+                        });
+                    }
+                }
+            }
+
+            // --- Table 2: 二十四节气 (24 Solar Terms) ---
+            const solarTerms = [];
+            const solarRows = tables[1].querySelectorAll('tr');
+
+            for (let i = 1; i < solarRows.length; i++) {
+                const tds = solarRows[i].querySelectorAll('td');
+                // Left Column: tds[0] = Name, tds[1] = Time
+                if (tds[0] && tds[1] && tds[0].innerText.trim()) {
+                    solarTerms.push({
+                        '节气': tds[0].innerText.trim(),
+                        '时刻 (UTC+8)': tds[1].innerText.trim()
+                    });
+                }
+                // Right Column: tds[3] = Name, tds[4] = Time
+                if (tds[3] && tds[4] && tds[3].innerText.trim()) {
+                    solarTerms.push({
+                        '节气': tds[3].innerText.trim(),
+                        '时刻 (UTC+8)': tds[4].innerText.trim()
+                    });
+                }
+            }
+
+            // 3. Print out to DevTools Console
+            console.group(`🌟 公元 ${targetYear} 年 月相与二十四节气时刻表`);
+            
+            console.log(`%c【二十四节气】 (${targetYear})`, "color: #2b8a3e; font-weight: bold; font-size: 13px;");
+            console.table(solarTerms);
+
+            console.log(`%c【月相与日月食】 (${targetYear})`, "color: #1971c2; font-weight: bold; font-size: 13px;");
+            console.table(moonPhases);
+
+            console.groupEnd();
+        }
+
         // Toggle state for 命宮
         let isMinggongActive = false; 
         let isHeHuaEnabled = false; 
@@ -526,36 +625,103 @@
             card.appendChild(branchSquare);
             bar.appendChild(card);
         }
-        // 
+        
+        /**
+         * 解析時刻字串為 Date 物件
+         */
+        function parseSolarTermDate(timeStr, fallbackYear) {
+            if (!timeStr) return null;
+            const match = timeStr.match(/(?:\((\d{4})\)\s*)?(\d{1,2})月(\d{1,2})日(?:,\s*(\d{1,2}):(\d{1,2}))?/);
+            if (!match) return null;
+            const y = match[1] ? parseInt(match[1], 10) : fallbackYear;
+            const m = parseInt(match[2], 10);
+            const d = parseInt(match[3], 10);
+            const hr = match[4] ? parseInt(match[4], 10) : 0;
+            const min = match[5] ? parseInt(match[5], 10) : 0;
+            return new Date(y, m - 1, d, hr, min);
+        }
 
-        function calculateMinggong() {  
+        /**
+         * 根據實際出生的年月日時分，與 24 節氣對比：
+         * 1. 判定處於哪兩個中氣之間 (區間)
+         * 2. 判定是否已過該區間內的中間節氣 (Middle Qi)
+         * 3. 查表得出地支 Y
+         */
+        function getMinggongBranchByZhongQi(year, month, day, hour, hourBranch) {
+            const hourIdx = deizi_order.indexOf(hourBranch);
+            if (hourIdx === -1) return null;
+
+            const yContent = document.getElementById('ycontent');
+            if (!yContent) return null;
+            const tables = yContent.querySelectorAll('table');
+            if (tables.length < 2) return null;
+
+            const rows = tables[1].querySelectorAll('tr');
+            if (rows.length < 13) return null;
+
+            // 當前排盤時間
+            const birthDate = new Date(year, month - 1, day, hour, 0);
+
+            let selectedKey = "冬至_大寒";
+            let hasPassedMiddleQi = false;
+            let middleQiName = "小寒";
+
+            // 構建 12 個區間的開始、中間(Middle Qi)、結束時間
+            for (let i = 1; i <= 12; i++) {
+                const curRowTds = rows[i].querySelectorAll('td');
+                const nextRowTds = rows[i + 1] ? rows[i + 1].querySelectorAll('td') : null;
+
+                const startDate = parseSolarTermDate(curRowTds[1].innerText.trim(), year);
+                const middleDate = parseSolarTermDate(curRowTds[4].innerText.trim(), year);
+                const midName = curRowTds[3].innerText.trim();
+                const endDate = nextRowTds ? parseSolarTermDate(nextRowTds[1].innerText.trim(), year) : null;
+
+                if (startDate && endDate && birthDate >= startDate && birthDate < endDate) {
+                    selectedKey = zhongQiIntervalKeys[i - 1];
+                    middleQiName = midName;
+                    hasPassedMiddleQi = (birthDate >= middleDate);
+                    break;
+                } else if (i === 12 && endDate && birthDate >= endDate) {
+                    // 已過當年冬至，進入次年冬至~大寒區間
+                    selectedKey = "冬至_大寒";
+                    const nextXiaoHanDate = parseSolarTermDate(rows[13].querySelectorAll('td')[4].innerText.trim(), year + 1);
+                    middleQiName = "小寒";
+                    hasPassedMiddleQi = nextXiaoHanDate ? (birthDate >= nextXiaoHanDate) : false;
+                    break;
+                }
+            }
+
+            // 依據是否過 Middle Qi 選擇字典
+            const activeDict = hasPassedMiddleQi ? minggongBranchDictAfter : minggongBranchDictBefore;
+            const Y = activeDict[selectedKey][hourIdx];
+
+            console.log(`🧭 命宮判定: 處於【${selectedKey}】，中間節氣為【${middleQiName}】，判定【${hasPassedMiddleQi ? '已過 Middle Qi (進一位)' : '未過 Middle Qi (用原位)'}】$\rightarrow$ 命宮地支為【${Y}】`);
+
+            return Y;
+        } 
+
+        // --- NEW ACCURATE CODE ---
+        function calculateMinggong() {   
             if (!currentBaziData) return null;
 
-            const bazi = currentBaziData.bazi || [
-                currentBaziData.A, currentBaziData.B, // Year Stem, Branch 
-                currentBaziData.C, currentBaziData.D, // Month Stem, Branch
-                currentBaziData.E, currentBaziData.F, // Day Stem, Branch
-                currentBaziData.G, currentBaziData.H  // Hour Stem, Branch
-            ];
-
-            const yearStem = bazi[0];
-            const monthBranch = bazi[3];
-            const hourBranch = bazi[7];
+            const yearStem = currentBaziData.A;
+            const hourBranch = currentBaziData.H;
 
             // If time is disabled or hourBranch is missing, return null
-            if (!yearStem || !monthBranch || !hourBranch) {
+            if (!yearStem || !hourBranch || isTimeDisabled) {
                 return null;
             }
 
-            const monthIdx = deizi_order.indexOf(monthBranch);
-            const hourIdx = deizi_order.indexOf(hourBranch);
+            const yr = parseInt(document.getElementById('yearSelect').value, 10);
+            const mth = parseInt(document.getElementById('monthSelect').value, 10);
+            const dy = parseInt(document.getElementById('daySelect').value, 10);
+            const hr = parseInt(document.getElementById('hourSelect').value, 10);
 
-            if (monthIdx === -1 || hourIdx === -1) return null;
+            // 1. 根據節氣 (中氣) 字典求出地支 Y
+            const Y = getMinggongBranchByZhongQi(yr, mth, dy, hr, hourBranch);
 
-            // Formula: (5 - monthIdx - hourIdx + 24) % 12
-            const branchIdx = (5 - monthIdx - hourIdx + 24) % 12;
-            const Y = deizi_order[branchIdx];
-            const X = 五虎遁歌訣[yearStem] ? 五虎遁歌訣[yearStem][Y] : null;
+            // 2. 根據五虎遁推天干 X
+            const X = (Y && 五虎遁歌訣[yearStem]) ? 五虎遁歌訣[yearStem][Y] : null;
 
             if (!X || !Y) return null;
 
@@ -2509,6 +2675,8 @@
                     const dy = parseInt(daySelect.value, 10);
                     const hr = parseInt(hourSelect.value, 10);
                     var sex = parseInt(sexSelect.value, 10); 
+
+                    logSunAndMoonToConsole(yr); 
 
                     var ans = p.GetInfo(sex, yr, mth, dy, hr, 0, 0); 
                     console.log(ans); 
