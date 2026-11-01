@@ -140,8 +140,10 @@ function getRelColor(color) {
     const dark = isDarkMode();
     if (!dark) {
         if (color === "darkorange") return "#d35400";
+        if (color === "teal") return "#087f5b"; // Darker teal in light mode
         return color;
     }
+    if (color === "teal") return "#20c997";     // Bright teal in dark mode
     if (color === "orange") return "#ffaa33";
     if (color === "darkorange") return "#ff7700";
     if (color === "purple") return "#c77dff";
@@ -151,7 +153,7 @@ function getRelColor(color) {
     if (color === "green") return "#5cdb95";
     if (color === "#d4af37") return "#ffd700";
     return color;
-}
+} 
 
 function formatColoredLabel(label, defaultColor) {
     let result = '';
@@ -394,6 +396,26 @@ function findBranchRelationships(branches) {
             }
         }
     }
+
+    // --- ADD 暗合 DETECTION HERE ---
+    for (const pair of 暗合) {
+        for (let i = 0; i < N; i++) {
+            for (let j = i + 1; j < N; j++) {
+                const b1 = branches[i];
+                const b2 = branches[j];
+                if ((b1 === pair[0] && b2 === pair[1]) || (b1 === pair[1] && b2 === pair[0])) {
+                    results.push({
+                        label: `${pair[0]}${pair[1]}暗合`,
+                        color: "teal",            // Distinct color for 暗合
+                        indices: [i, j],
+                        active: [true, true],
+                        markerType: 'circle'       // Combinations use circles
+                    });
+                }
+            }
+        }
+    }
+    // -------------------------------- 
 
     for (const [key, pair] of Object.entries(six_rel["沖"])) {
         for (let i = 0; i < N; i++) {

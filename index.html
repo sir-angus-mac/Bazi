@@ -2093,6 +2093,14 @@
             '巳': '亥', '亥': '巳'
         };
 
+        // Helper: Checks if an element is a bottom hidden stem (Rows 1 & 2) or an invisible branch popup stem
+        function isBottomOrBranchHiddenStem(el) {
+            if (!el) return false; 
+            const isBottomStem = Boolean(el.closest && el.closest('[id^="rect_h_r"]'));
+            const isPopupStem = Boolean(el.classList && (el.classList.contains('popup-stem') || el.closest('.branch-hidden-popup')));
+            return isBottomStem || isPopupStem;
+        }
+
         function createArrow(fromElem, toElem, color, markerId, isBiDirectional = false, opacity = 1) {
             const canvas = document.getElementById('arrowCanvas');
             if (!canvas) return false;  
@@ -2137,29 +2145,73 @@
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", adjustedStartX);
             line.setAttribute("y1", adjustedStartY);
-            line.setAttribute("x2", adjustedEndX);
-            line.setAttribute("y2", adjustedEndY);
             line.setAttribute("stroke", color);
             line.setAttribute("stroke-width", "2.5");
-            
-            line.style.strokeDasharray = adjustedDistance;
-            line.style.strokeDashoffset = adjustedDistance;
 
             group.appendChild(line);
             canvas.appendChild(group);
 
-            const drawAnim = line.animate([
-                { strokeDashoffset: adjustedDistance },
-                { strokeDashoffset: 0 }
-            ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+            // Check if BOTH elements are bottom hidden stems or invisible branch popup stems
+            const isDotted = isBottomOrBranchHiddenStem(fromElem) && isBottomOrBranchHiddenStem(toElem);
 
-            drawAnim.onfinish = () => {
-                line.setAttribute("marker-end", `url(#${markerId})`);
-                if (isBiDirectional) {
-                    line.setAttribute("marker-start", `url(#${markerId})`);
+            if (isDotted) {
+                // Apply dotted stroke pattern (5px dash, 4px gap)
+                line.setAttribute("stroke-dasharray", "5,4");
+                
+                // Start line at origin (length 0)
+                line.setAttribute("x2", adjustedStartX);
+                line.setAttribute("y2", adjustedStartY);
+
+                const duration = 600; // 600ms draw animation
+                const startTime = performance.now();
+
+                // Animate (x2, y2) extending smoothly toward target at 60fps
+                function animateDottedLine(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Cubic ease-out
+                    const ease = 1 - Math.pow(1 - progress, 3);
+
+                    const curX2 = adjustedStartX + (adjustedEndX - adjustedStartX) * ease;
+                    const curY2 = adjustedStartY + (adjustedEndY - adjustedStartY) * ease;
+
+                    line.setAttribute("x2", curX2);
+                    line.setAttribute("y2", curY2);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateDottedLine);
+                    } else {
+                        // Reached destination: attach arrowheads
+                        line.setAttribute("marker-end", `url(#${markerId})`);
+                        if (isBiDirectional) {
+                            line.setAttribute("marker-start", `url(#${markerId})`);
+                        }
+                    }
                 }
-            };
+                requestAnimationFrame(animateDottedLine);
 
+            } else {
+                // Standard solid line animation
+                line.setAttribute("x2", adjustedEndX);
+                line.setAttribute("y2", adjustedEndY);
+                line.style.strokeDasharray = adjustedDistance;
+                line.style.strokeDashoffset = adjustedDistance;
+
+                const drawAnim = line.animate([
+                    { strokeDashoffset: adjustedDistance },
+                    { strokeDashoffset: 0 }
+                ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+
+                drawAnim.onfinish = () => {
+                    line.setAttribute("marker-end", `url(#${markerId})`);
+                    if (isBiDirectional) {
+                        line.setAttribute("marker-start", `url(#${markerId})`);
+                    }
+                };
+            }
+
+            // Fade out after holding
             group.animate([
                 { opacity: opacity },
                 { opacity: 0 }
