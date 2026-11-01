@@ -54,13 +54,24 @@
     --sel-shengong-bg: #3d0b2e; 
 }
 
+html {
+    height: 100%;
+}
+
 body {
+    margin: 0;                /* Resets browser default 8px margin */
+    position: relative;
+    min-height: 100%;
+    width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
     font-family: 'Noto Serif SC', "Microsoft YaHei", "SimSun", serif;
     padding: 12px;
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color 0.2s, color 0.2s;
-}
+} 
+ 
 
 /* Standard UI Controls (Scaled Smaller) */
 .controls-bar {
@@ -336,13 +347,14 @@ body {
 }
 
 #arrowCanvas {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 9999;
+    overflow: hidden;
 } 
 
 #invisibleBranchRelContainer text.spawned-branch {
@@ -382,7 +394,7 @@ body {
 
 /* Vertical Extension Popup for Invisible Branch Hidden Stems */
 .branch-hidden-popup {
-    position: fixed;
+    position: absolute;      /* WAS: position: fixed; */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -396,7 +408,7 @@ body {
     min-width: 26px;
     box-sizing: border-box;
     transition: opacity 0.4s ease;
-}
+} 
 
 .branch-hidden-popup.fading {
     opacity: 0;

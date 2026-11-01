@@ -617,23 +617,20 @@
             return (stems && stems.length > 0) ? stems[0] : null;
         } 
 
-        function spawnBranchHiddenPopup(branchElem, branchChar) {
+        function spawnBranchHiddenPopup(branchElem, branchChar) { 
             const primaryStem = getBranchPrimaryStem(branchChar);
-            if (!branchElem || !primaryStem) return null; 
+            if (!branchElem || !primaryStem) return null;  
 
-            // 1. Prevent spawning if the invisible branch container is collapsed or hidden
             const container = branchElem.closest('.bazi-rel-container');
             if (container && (container.classList.contains('collapsed') || container.style.display === 'none')) {
                 return null;
             }
 
-            // 2. Prevent spawning if the branch element is not rendered on screen (avoid (0,0) top-left bug)
             const rect = branchElem.getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0) {
                 return null;
             }
 
-            // If already active, refresh the 3-second timer
             if (activeBranchPopups.has(branchElem)) {
                 const existing = activeBranchPopups.get(branchElem);
                 clearTimeout(existing.timer);
@@ -648,10 +645,13 @@
                 return existing;
             }
 
+            // Measure relative to body's coordinate space
+            const bodyRect = document.body.getBoundingClientRect();
+
             const popup = document.createElement('div');
             popup.className = 'branch-hidden-popup';
-            popup.style.left = `${rect.left + rect.width / 2}px`;
-            popup.style.top = `${rect.bottom + 6}px`;
+            popup.style.left = `${(rect.left - bodyRect.left) + rect.width / 2}px`;
+            popup.style.top = `${(rect.bottom - bodyRect.top) + 6}px`;
             popup.style.transform = 'translateX(-50%)';
 
             const divider = document.createElement('div');
@@ -663,13 +663,11 @@
 
             const stemElements = {};
 
-            // ONLY display the single first hidden stem!
             const span = document.createElement('span');
             span.className = 'stem-char popup-stem';
             span.style.color = getElementColor(primaryStem);
             span.textContent = primaryStem;
 
-            // Add this: Check if this primary stem matches the commanding stem
             if (isRenyuanActive) { 
                 const res = calculateRenyuanSiling();
                 if (res && res.X === primaryStem) {
@@ -687,7 +685,6 @@
             popup.appendChild(stemList);
             document.body.appendChild(popup);
 
-            // 3-second timer with smooth fade out
             const fadeTimer = setTimeout(() => popup.classList.add('fading'), 2600);
             const timer = setTimeout(() => {
                 popup.remove();
@@ -2034,12 +2031,18 @@
 
         function drawXAnimation(element) {
             const canvas = document.getElementById('arrowCanvas');
-            if (!canvas) return;
+            if (!canvas) return; 
 
+            const canvasRect = canvas.getBoundingClientRect();
             const rect = element.getBoundingClientRect();
-            const cx = rect.left + (rect.width / 2);
-            const cy = rect.top + (rect.height / 2);
-            const size = element.classList.contains('main-pillar-stem') ? 20 : 10;
+
+            // Exact center relative to the SVG canvas
+            const cx = (rect.left - canvasRect.left) + (rect.width / 2);
+            const cy = (rect.top - canvasRect.top) + (rect.height / 2);
+
+            // Support both main pillar stems AND main pillar branches (90x90 squares)
+            const isLarge = element.classList.contains('main-pillar-stem') || element.classList.contains('main-pillar-branch');
+            const size = isLarge ? 22 : 10;
 
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
@@ -2092,25 +2095,27 @@
 
         function createArrow(fromElem, toElem, color, markerId, isBiDirectional = false, opacity = 1) {
             const canvas = document.getElementById('arrowCanvas');
-            if (!canvas) return false; 
+            if (!canvas) return false;  
 
-            // Prevent any arrow from pointing to or originating from "合"
             if ((fromElem && fromElem.textContent.trim() === '合') || (toElem && toElem.textContent.trim() === '合')) {
                 return false;
             }
 
+            const canvasRect = canvas.getBoundingClientRect();
             const startRect = fromElem.getBoundingClientRect();
             const endRect = toElem.getBoundingClientRect();
             if (startRect.width === 0 || startRect.height === 0 || endRect.width === 0 || endRect.height === 0) return false;
 
-            const startX = startRect.left + (startRect.width / 2);
-            const startY = startRect.top + (startRect.height / 2);
-            const endX = endRect.left + (endRect.width / 2);
-            const endY = endRect.top + (endRect.height / 2);
+            // Calculate exact center relative to the SVG canvas coordinate space
+            const startX = (startRect.left - canvasRect.left) + (startRect.width / 2);
+            const startY = (startRect.top - canvasRect.top) + (startRect.height / 2);
+            const endX = (endRect.left - canvasRect.left) + (endRect.width / 2);
+            const endY = (endRect.top - canvasRect.top) + (endRect.height / 2);
 
             const isMainBranch = fromElem.classList.contains('main-pillar-branch') || fromElem.classList.contains('main-pillar-stem');
+            const isTargetMain = toElem.classList.contains('main-pillar-branch') || toElem.classList.contains('main-pillar-stem');
             const startOffsetRadius = isMainBranch ? 35 : 12;
-            const endOffsetRadius = toElem.classList.contains('main-pillar-branch') || toElem.classList.contains('main-pillar-stem') ? 35 : 12;
+            const endOffsetRadius = isTargetMain ? 35 : 12;
 
             const dx = endX - startX;
             const dy = endY - startY;
@@ -2126,7 +2131,6 @@
 
             const adjustedDistance = Math.hypot(adjustedEndX - adjustedStartX, adjustedEndY - adjustedStartY);
 
-            // 1. Wrap in a <g> container with initial opacity
             const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
             group.style.opacity = opacity;
 
@@ -2144,13 +2148,11 @@
             group.appendChild(line);
             canvas.appendChild(group);
 
-            // 2. Animate line drawing
             const drawAnim = line.animate([
                 { strokeDashoffset: adjustedDistance },
                 { strokeDashoffset: 0 }
             ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
 
-            // 3. Dynamically attach arrowhead once draw finishes
             drawAnim.onfinish = () => {
                 line.setAttribute("marker-end", `url(#${markerId})`);
                 if (isBiDirectional) {
@@ -2158,13 +2160,11 @@
                 }
             };
 
-            // 4. Animate opacity on the GROUP (<g>) starting from the designated opacity
             group.animate([
                 { opacity: opacity },
                 { opacity: 0 }
             ], { duration: 500, delay: 1500, easing: 'ease-out', fill: 'forwards' });
 
-            // 5. Remove the entire group node from DOM
             setTimeout(() => group.remove(), 2100);
             return true;
         }
