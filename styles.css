@@ -77,10 +77,24 @@ body {
 .controls-bar {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px 6px;           /* 8px vertical row gap, 6px horizontal gap */
     flex-wrap: wrap;
     font-size: 13px;
-}
+
+    /* 1. Constrain to the EXACT tab/viewport width (minus 28px for body padding & scrollbar) */
+    width: calc(100vw - 28px);
+    max-width: calc(100vw - 28px);
+    box-sizing: border-box;
+
+    /* 2. Anchor flush to the left of your visible screen when scrolling the grid sideways */
+    position: sticky;
+    left: 12px;
+    top: 0;
+    z-index: 1000;
+    background-color: var(--bg-color);
+    padding-bottom: 6px;
+    transition: background-color 0.2s;
+} 
 
 .btn-dayun {
     font-size: 13px;
@@ -270,13 +284,19 @@ body {
     overflow-x: auto;
     padding: 10px 12px;
     margin-top: 15px;
-    max-width: 840px;
+
+    /* Fit within tab width on small windows, up to 840px on wide screens */
+    width: 100%;
+    max-width: min(840px, calc(100vw - 28px));
+    position: sticky;
+    left: 12px;
+
     box-sizing: border-box;
     border: 3px solid var(--border-color);
     background-color: var(--container-bg);
     user-select: none;
     white-space: nowrap;
-}
+} 
 .dayun-card { 
     display: inline-flex;
     flex-direction: column;
@@ -363,13 +383,12 @@ body {
 }
 
 .bar-label-vertical {
-    /* Pin flush to the left edge inside the container border */
     position: sticky;
     left: -12px;
-    margin: -10px 6px -10px -12px; /* Pull flush over container padding */
-    padding: 10px 12px;            /* Preserve inner alignment */
+    margin: -10px 6px -10px -12px;
+    padding: 10px 12px;
     z-index: 10;
-    background-color: var(--container-bg); /* Match container background */
+    background-color: var(--container-bg);
 
     display: flex;
     flex-direction: column;
@@ -382,7 +401,16 @@ body {
     color: var(--sub-text-color);
     user-select: none;
     flex-shrink: 0;
+
+    /* --- ADD THESE 3 LINES --- */
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
 }
+
+.bar-label-vertical:hover {
+    background-color: var(--card-hover);
+    color: var(--text-color);
+} 
 
 /* Stem tag outline for Ming Gong */
 .stem-tag.minggong,

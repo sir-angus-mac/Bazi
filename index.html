@@ -1817,7 +1817,7 @@
             const filteredOptions = getFilteredYuanYunOptions();
             
             // Add vertical sign
-            let html = `<div class="bar-label-vertical">元<br>運</div>`;
+            let html = `<div class="bar-label-vertical" onclick="yuanyunBarVisible = false; renderYuanyunBar();" title="點擊關閉">元<br>運</div>`; 
 
             filteredOptions.forEach((item) => {
                 const isSelected = selectedYuanyun && selectedYuanyun.year === item.year;
@@ -1848,7 +1848,8 @@
             }
 
             // Add vertical sign
-            let html = `<div class="bar-label-vertical">大<br>運</div>`;
+            // Change this line:
+            let html = `<div class="bar-label-vertical" onclick="dayunBarVisible = false; renderDayunBar();" title="點擊關閉">大<br>運</div>`;
 
             currentBaziData.bigList.forEach((item, idx) => {
                 const isSelected = selectedDayun && selectedDayun.index === idx;
@@ -1883,7 +1884,8 @@
             const list = getLiunianList(selectedDayun.index);
             
             // Add vertical sign
-            let html = `<div class="bar-label-vertical">流<br>年</div>`;
+            // Change this line:
+            let html = `<div class="bar-label-vertical" onclick="liunianBarVisible = false; renderLiunianBar();" title="點擊關閉">流<br>年</div>`;
 
             list.forEach((item, idx) => {
                 const isSelected = selectedLiunian && selectedLiunian.index === idx;
@@ -1918,7 +1920,8 @@
             const list = getLiuyueList(selectedDayun.index, selectedLiunian.index);
             
             // Add vertical sign
-            let html = `<div class="bar-label-vertical">流<br>月</div>`;
+            // Change this line:
+            let html = `<div class="bar-label-vertical" onclick="liuyueBarVisible = false; renderLiuyueBar();" title="點擊關閉">流<br>月</div>`;
 
             list.forEach((item, idx) => {
                 const isSelected = selectedLiuyue && selectedLiuyue.index === idx;
@@ -1954,7 +1957,8 @@
             const list = getLiuriList(selectedDayun.index, selectedLiunian.index, selectedLiuyue.index);
             
             // Add vertical sign
-            let html = `<div class="bar-label-vertical">流<br>日</div>`;
+            // Change this line:
+            let html = `<div class="bar-label-vertical" onclick="liuriBarVisible = false; renderLiuriBar();" title="點擊關閉">流<br>日</div>`;
 
             list.forEach((item, idx) => {
                 const isSelected = selectedLiuri && selectedLiuri.index === idx;
@@ -1990,7 +1994,7 @@
             const list = getLiushiList(selectedDayun.index, selectedLiunian.index, selectedLiuyue.index, selectedLiuri.index);
             
             // Add vertical sign
-            let html = `<div class="bar-label-vertical">流<br>時</div>`;
+            let html = `<div class="bar-label-vertical" onclick="liushiBarVisible = false; renderLiushiBar();" title="點擊關閉">流<br>時</div>`; 
 
             list.forEach((item, idx) => {
                 const isSelected = selectedLiushi && selectedLiushi.index === idx;
