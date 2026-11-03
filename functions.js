@@ -107,10 +107,16 @@ function toggleRelContainer(event, el) {
         if (event.target !== el) return;
     }
     
+    // --- ADD THIS CHECK ---
+    // Prevent collapsing the invisible stem container in 做功 mode
+    if (typeof isZuoGongMode !== 'undefined' && isZuoGongMode && el.id === 'invisibleStemRelContainer') {
+        return;
+    }
+    // ----------------------
+
     el.classList.toggle('collapsed');
     relContainerStates[el.id] = el.classList.contains('collapsed');
 
-    // If collapsing the invisible branches container, clean up all active tooltips
     if (el.id === 'invisibleBranchRelContainer' && el.classList.contains('collapsed')) {
         document.querySelectorAll('.branch-hidden-popup').forEach(p => p.remove());
         activeBranchPopups.clear();

@@ -12,6 +12,7 @@
     <script src="paipan.js" defer></script> 
     <script src="constants.js" defer></script>
     <script src="functions.js" defer></script>
+    <script src="working.js" defer></script> 
 
     <script src="https://ytliu0.github.io/ChineseCalendar/sunMoon_c.js"></script>
 </head> 
@@ -69,8 +70,10 @@
         </div> 
         <button id="disableTimeBtn" class="btn-dayun">Disable Time</button> 
         <button id="hehuaBtn" class="btn-dayun">Enable 合化</button> 
+        <button id="zuogongBtn" class="btn-dayun" onclick="toggleZuoGongMode()">做功 mode</button>
         <button id="splitBtn" class="btn-dayun">Combine</button>
         <button id="renyuanBtn" class="btn-dayun">人元司令</button>
+        <button id="fourStemsBtn" class="btn-dayun">4 Stems</button>
         <button id="minggongBtn" class="btn-dayun">命宮</button>
         <button id="taiyuanBtn" class="btn-dayun">胎元</button>
         <button id="taixiBtn" class="btn-dayun">胎息</button> 
@@ -796,6 +799,7 @@
             isTaiyuanActive = false;
             renderTaiyuanBar();
             renderGrid();
+            updateFourStemsBtn();
         }
 
         function renderTaiyuanBar() {
@@ -819,10 +823,11 @@
 
             const card = document.createElement('div');
             card.className = `dayun-card ${isTaiyuanActive ? 'selected-taiyuan' : ''}`; 
-            card.onclick = () => {
+            card.onclick = () => { 
                 isTaiyuanActive = !isTaiyuanActive;
                 renderTaiyuanBar();
                 renderGrid();
+                updateFourStemsBtn();
             };
 
             const header = document.createElement('div');
@@ -884,6 +889,7 @@
             isTaixiActive = false;
             renderTaixiBar();
             renderGrid();
+            updateFourStemsBtn();
         }
 
         function renderTaixiBar() {
@@ -911,6 +917,7 @@
                 isTaixiActive = !isTaixiActive;
                 renderTaixiBar();
                 renderGrid();
+                updateFourStemsBtn();
             };
 
             const header = document.createElement('div');
@@ -943,7 +950,6 @@
         function calculateShengong(bazi) { 
             let yearStem, monthBranch, hourBranch;
 
-            // 1. Extract values from passed array or global currentBaziData
             if (Array.isArray(bazi) && bazi.length >= 8) {
                 yearStem = bazi[0];
                 monthBranch = bazi[3];
@@ -954,9 +960,10 @@
                 hourBranch = currentBaziData.H;
             } else {
                 return null;
-            }
+            } 
 
-            if (!yearStem || !monthBranch || !hourBranch) return null;
+            // ✅ If time is disabled or hour branch is missing, return null
+            if (!yearStem || !monthBranch || !hourBranch || isTimeDisabled) return null;
 
             const monthBranchIdx = deizi_order.indexOf(monthBranch);
             const hourBranchIdx = deizi_order.indexOf(hourBranch);
@@ -992,6 +999,7 @@
             isShengongActive = false;
             renderShengongBar();
             renderGrid();
+            updateFourStemsBtn();
         }
 
         function renderShengongBar() {
@@ -1019,6 +1027,7 @@
                 isShengongActive = !isShengongActive;
                 renderShengongBar();
                 renderGrid();
+                updateFourStemsBtn();
             };
 
             const header = document.createElement('div');
@@ -1746,10 +1755,57 @@
             container.innerHTML = svgHtml;
         }
 
+        /**
+         * Automatically adds all four auxiliary pillars (命宮, 胎元, 胎息, 身宮) if not all are added.
+         * If all 4 are already added, it toggles them off.
+         */ 
+        function toggleFourStems() {
+            const allActive = isMinggongActive && isTaiyuanActive && isTaixiActive && isShengongActive;
+
+            if (!allActive) {
+                // Add all four
+                isMinggongActive = true;
+                isTaiyuanActive = true;
+                isTaixiActive = true;
+                isShengongActive = true;
+            } else {
+                // If already added, remove all four
+                isMinggongActive = false;
+                isTaiyuanActive = false;
+                isTaixiActive = false;
+                isShengongActive = false;
+            }
+
+            // Refresh all 4 bars & the grid
+            renderMinggongBar();
+            renderTaiyuanBar();
+            renderTaixiBar();
+            renderShengongBar();
+            renderGrid();
+            updateFourStemsBtn();
+        }
+
+        /**
+         * Visually highlights the "4 Stems" button when all four are active
+         */
+        function updateFourStemsBtn() {
+            const btn = document.getElementById('fourStemsBtn');
+            if (!btn) return;
+            const allActive = isMinggongActive && isTaiyuanActive && isTaixiActive && isShengongActive;
+            if (allActive) {
+                btn.style.backgroundColor = 'var(--card-hover)';
+                btn.style.borderColor = '#6c757d';
+            } else {
+                btn.style.backgroundColor = '';
+                btn.style.borderColor = '';
+            }
+        }
+
         function removeMinggong() {
             isMinggongActive = false;
             renderMinggongBar();
-            renderGrid();
+            renderGrid(); 
+            updateFourStemsBtn();
         }
 
         function renderMinggongBar() {
@@ -1778,6 +1834,7 @@
                 isMinggongActive = !isMinggongActive;
                 renderMinggongBar();
                 renderGrid();
+                updateFourStemsBtn();
             };
 
             const header = document.createElement('div');
@@ -1970,42 +2027,6 @@
                 html += `
                     <div class="dayun-card${isSelected ? ' selected-liuri' : ''}" onclick="selectLiuri(${idx})">
                         <div class="dayun-year">${item.date}</div>
-                        <div class="dayun-square" style="color:${stemCol}; background-color:${stemBg}">${item.stem}</div>
-                        <div class="dayun-square" style="color:${branchCol}; background-color:${branchBg}">${item.branch}</div>
-                        <div class="dayun-time">${item.timeStr}</div>
-                    </div>
-                `;
-            });
-            bar.innerHTML = html;
-        }
-
-        function renderLiushiBar() {
-            const bar = document.getElementById('liushiBar');
-            if (!bar) return;
-
-            const shouldShow = liushiBarVisible && selectedDayun !== null && selectedLiunian !== null && selectedLiuyue !== null && selectedLiuri !== null;
-            bar.style.display = shouldShow ? 'flex' : 'none';
-
-            if (!shouldShow) {
-                bar.innerHTML = '';
-                return;
-            }
-
-            const list = getLiushiList(selectedDayun.index, selectedLiunian.index, selectedLiuyue.index, selectedLiuri.index);
-            
-            // Add vertical sign
-            let html = `<div class="bar-label-vertical" onclick="liushiBarVisible = false; renderLiushiBar();" title="點擊關閉">流<br>時</div>`; 
-
-            list.forEach((item, idx) => {
-                const isSelected = selectedLiushi && selectedLiushi.index === idx;
-                const stemCol = getElementColor(item.stem);
-                const stemBg = getBgColor(item.stem);
-                const branchCol = getElementColor(item.branch);
-                const branchBg = getBgColor(item.branch);
-
-                html += `
-                    <div class="dayun-card${isSelected ? ' selected-liushi' : ''}" onclick="selectLiushi(${idx})">
-                        <div class="dayun-year">${item.date || ''}</div>
                         <div class="dayun-square" style="color:${stemCol}; background-color:${stemBg}">${item.stem}</div>
                         <div class="dayun-square" style="color:${branchCol}; background-color:${branchBg}">${item.branch}</div>
                         <div class="dayun-time">${item.timeStr}</div>
@@ -2226,6 +2247,8 @@
         }
 
         function drawXingArrows(sourceElement, char) {
+            if (typeof isZuoGongMode !== 'undefined' && isZuoGongMode) return 0;
+
             const canvas = document.getElementById('arrowCanvas');
             if (!canvas) return 0;
 
@@ -2268,6 +2291,8 @@
         } 
 
         function triggerDizhiArrows(clickedElement, sourceChar, suppressCross = false) { 
+            if (typeof isZuoGongMode !== 'undefined' && isZuoGongMode) return 0;
+
             const canvas = document.getElementById('arrowCanvas');
             if (!canvas) return 0;
 
@@ -2299,6 +2324,15 @@
         }
 
         function triggerArrows(clickedElement, sourceChar, originBranchElem = null, suppressCross = false, arrowOpacity = 1) { 
+            // --- UPDATE THIS BLOCK ---
+            if (typeof isZuoGongMode !== 'undefined' && isZuoGongMode) {
+                if (typeof handleZuoGongClick === 'function') {
+                    handleZuoGongClick(clickedElement, sourceChar);
+                }
+                return 0; // Disable all arrow rendering
+            } 
+            // ---------------------------------
+            
             const canvas = document.getElementById('arrowCanvas');
             if (!canvas) return 0;  
 
@@ -2415,9 +2449,14 @@
 
         function renderLiushiBar() {
             const bar = document.getElementById('liushiBar');
-            if (!bar) return;
+            if (!bar) return; 
 
-            const shouldShow = liushiBarVisible && selectedDayun !== null && selectedLiunian !== null && selectedLiuyue !== null && selectedLiuri !== null;
+            const shouldShow = liushiBarVisible && 
+                            selectedDayun !== null && 
+                            selectedLiunian !== null && 
+                            selectedLiuyue !== null && 
+                            selectedLiuri !== null;
+
             bar.style.display = shouldShow ? 'flex' : 'none';
 
             if (!shouldShow) {
@@ -2426,7 +2465,10 @@
             }
 
             const list = getLiushiList(selectedDayun.index, selectedLiunian.index, selectedLiuyue.index, selectedLiuri.index);
-            let html = '';
+            
+            // ✅ Clickable vertical tab that closes the bar: 
+            let html = `<div class="bar-label-vertical" onclick="liushiBarVisible = false; renderLiushiBar();" title="點擊關閉">流<br>時</div>`; 
+
             list.forEach((item, idx) => {
                 const isSelected = selectedLiushi && selectedLiushi.index === idx;
                 const stemCol = getElementColor(item.stem);
@@ -2447,12 +2489,19 @@
         }
 
         function renderGrid() {
+            if (typeof clearAllZuoGongTooltips === 'function') {
+                clearAllZuoGongTooltips();
+            } 
+            
             document.querySelectorAll('.branch-hidden-popup').forEach(p => p.remove());
             activeBranchPopups.clear();
             
+            // ✅ Re-render all 4 auxiliary bars so they update with the new BaZi
             renderMinggongBar();
             renderTaiyuanBar();
             renderTaixiBar();
+            renderShengongBar(); // (This was previously missing!)
+            
             if (!currentBaziData) return;
 
             let { A, B, C, D, E, F, G, H, X, Y } = currentBaziData; 
@@ -2754,11 +2803,11 @@
             // Row 3.5: Invisible Heavenly Stem Relationship Container
             html += `<div class="bazi-rel-container${relContainerStates['invisibleStemRelContainer'] ? ' collapsed' : ''}" id="invisibleStemRelContainer" style="grid-column: span ${colsCount}" onclick="toggleRelContainer(event, this)"></div>`; 
 
-            // Row 4: Stem Squares
+            // Row 4: Stem Squares 
             stems.forEach((char, idx) => {
                 let clickHandler = `triggerArrows(this, '${char}')`;
-                html += `<div class="bazi-square main-pillar-stem" style="${getSquareStyle(idx, char)}" onclick="${clickHandler}">${char}</div>`;
-            }); 
+                html += `<div class="bazi-square main-pillar-stem" data-col="${idx}" style="${getSquareStyle(idx, char)}" onclick="${clickHandler}">${char}</div>`;
+            });
 
             // Row 5: Branch Squares
             branches.forEach((char, idx) => {
@@ -2973,6 +3022,11 @@
             const hourSelect = document.getElementById('hourSelect');
             const sexSelect = document.getElementById('sexSelect');
             const splitBtn = document.getElementById('splitBtn'); 
+            const fourStemsBtn = document.getElementById('fourStemsBtn');
+            if (fourStemsBtn) { 
+                fourStemsBtn.addEventListener('click', toggleFourStems);
+            }
+
             const renyuanBtn = document.getElementById('renyuanBtn');
             if (renyuanBtn) {
                 renyuanBtn.addEventListener('click', () => {
@@ -2996,17 +3050,6 @@
                 }
                 
                 renderGrid();
-            });
-
-            // Bind all input selectors to trigger grid & 命宮 recalculation
-            ['yearSelect', 'monthSelect', 'daySelect', 'hourSelect', 'sexSelect'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('change', () => {
-                        // Update currentBaziData here via paipan calculation logic
-                        renderGrid();
-                    });
-                }
             });
 
             // Bind 命宮 Toggle Button

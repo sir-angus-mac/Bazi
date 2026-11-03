@@ -551,3 +551,94 @@ body {
     stroke-width: 3.5px !important;
     filter: drop-shadow(0 0 3px var(--renyuan-color, #ffd700));
 } 
+
+/* Button active state for 做功 mode */
+.btn-dayun.active-zuogong {
+    background-color: #d35400;
+    color: #ffffff;
+    border-color: #a04000;
+    font-weight: bold;
+}
+
+/* Base overlay tooltip */
+.zuogong-tooltip {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-bg);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow);
+    z-index: 2000;
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    animation: zuogongPop 0.15s ease-out;
+}
+
+/* Large overlay for main pillar squares (90x90) */
+.zuogong-tooltip.large {
+    width: 90px;
+    height: 90px;
+    border-radius: 5px;
+}
+.zuogong-tooltip.large .zuogong-num {
+    font-size: 16px;
+    font-weight: 900;
+    color: #e67e22;
+    margin-bottom: 2px;
+}
+.zuogong-tooltip.large .zuogong-stem {
+    font-size: 56px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+/* Small overlay for spawned invisible stems */
+.zuogong-tooltip.small {
+    min-width: 28px;
+    min-height: 40px;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.zuogong-tooltip.small .zuogong-num {
+    font-size: 11px;
+    font-weight: 900;
+    color: #e67e22;
+    border-bottom: 1px dashed var(--border-color);
+    width: 100%;
+    text-align: center;
+    margin-bottom: 2px;
+}
+.zuogong-tooltip.small .zuogong-stem {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+@keyframes zuogongPop {
+    from {
+        transform: translate(-50%, -50%) scale(0.85);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+} 
+
+/* In-flight hopping card styling */
+.zuogong-tooltip.zuogong-hopper {
+    pointer-events: none;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    border-style: dashed;
+    border-color: #e67e22;
+}
+
+/* Ensure resting tooltips remain clearly in front */
+.zuogong-tooltip.large {
+    z-index: 2000;
+} 
