@@ -849,11 +849,9 @@ function selectLiunian(index) {
 }
 
 function getLiunianStartTime(dayunIdx, liunianIdx) {
-    if (liunianIdx === 0) {
-        if (currentBaziData && currentBaziData.big_start_time && currentBaziData.big_start_time[dayunIdx]) {
-            return currentBaziData.big_start_time[dayunIdx];
-        }
-    }
+    // 【修復】：刪除原本 if (liunianIdx === 0) 的判定！
+    // 流年的流月一律從該流年的「立春」開始計算，不受大運交運月日時干擾。
+
     const liunianList = getLiunianList(dayunIdx);
     if (!liunianList[liunianIdx]) return null;
     const target = liunianList[liunianIdx];
@@ -862,6 +860,7 @@ function getLiunianStartTime(dayunIdx, liunianIdx) {
     p.zwz = false;
     var sex = parseInt(document.getElementById('sexSelect').value, 10);
 
+    // 從該年 2 月 1 日開始往後掃描，精確定位該流年的「立春」交節時刻
     let d = new Date(target.year, 1, 1, 0, 0, 0);
     for (let h = 0; h < 30 * 24; h++) {
         let y = d.getFullYear();
@@ -871,12 +870,12 @@ function getLiunianStartTime(dayunIdx, liunianIdx) {
 
         let ans = p.GetInfo(sex, y, m, day, hr, 0, 0);
         if (ans && ans.bazi && ans.bazi[0] === target.stem && ans.bazi[1] === target.branch) {
-            return [y, m, day, hr];
+            return [y, m, day, hr]; // 成功找到立春換年柱的準確年月日時
         }
         d.setHours(d.getHours() + 1);
     }
-    return [target.year, 2, 4, 0];
-}
+    return [target.year, 2, 4, 0]; // 預設備用立春時間
+} 
 
 function getLiuyueList(dayunIdx, liunianIdx) {
     const startTime = getLiunianStartTime(dayunIdx, liunianIdx);
@@ -896,12 +895,16 @@ function getLiuyueList(dayunIdx, liunianIdx) {
     let startAns = p.GetInfo(sex, y, m, day, hr, 0, 0);
     if (!startAns || !startAns.bazi) return [];
 
-    const targetYearStem = startAns.bazi[0];
+    // 【建議優化】：優先以流年列表記錄的干支為基準
+    const liunianList = getLiunianList(dayunIdx);
+    const targetYearStem = (liunianList[liunianIdx] && liunianList[liunianIdx].stem) 
+                           ? liunianList[liunianIdx].stem 
+                           : startAns.bazi[0];
+
     let prevMonthStem = startAns.bazi[2];
     let prevMonthBranch = startAns.bazi[3];
 
-    const list = [];
-
+    const list = []; 
     function toOddHour(hour) {
         if (hour % 2 === 0) {
             return hour === 0 ? 23 : hour - 1;
