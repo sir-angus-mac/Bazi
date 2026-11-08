@@ -1341,7 +1341,7 @@
 
         function renderInvisibleStemRelationships(stems, headers) {
             const container = document.getElementById('invisibleStemRelContainer');
-            if (!container) return;    
+            if (!container) return;  
 
             let rels = findInvisibleStemRelationships(stems);
 
@@ -1385,7 +1385,7 @@
                 if (targetIdx !== -1 && targetIdx < N - 1) { 
                     const splitX = xCoords[targetIdx] + 49; 
                     const lineColor = isDarkMode() ? "#666" : "#aaa";
-                    svgHtml += `<line x1="${splitX}" y1="0" x2="${splitX}" y2="${totalHeight}" stroke="${lineColor}" stroke-width="1.5" stroke-dasharray="4,4" />`;
+                    svgHtml += `<line x1="${splitX}" y1="0" x2="${splitX}" y2="${totalHeight}" stroke="${lineColor}" stroke-width="${1.5}" stroke-dasharray="4,4" />`;
                 }
             }
 
@@ -1418,32 +1418,51 @@
                     </defs>
                 `;
 
+                // ================= 【嚴格實線/虛線判定】 =================
+                // 1. 相鄰同干緊貼 (如 丙丙)
+                const isCase1 = (rel.type === 'same_neighbor');
+
+                // 2. 嚴格十天干連茹相鄰 (如 丙丁、丁戊；丁己不是鄰居，不在此列！)
+                const isCase2 = (rel.type === 'neighbor');
+
+                // 3. 天干正合 (如 甲己、乙庚、丙辛、丁壬、戊癸，無論距離)
+                const isCase3 = (rel.type === 'he_yin');
+
+                // 僅此 3 種為粗實線，其餘（包含 丁己夾戊、丙戊夾丁、隔位丙O丙）一律為虛線
+                const isBoldSolid = isCase1 || isCase2 || isCase3;
+
+                let strokeWidth = isBoldSolid ? 3.5 : 2;
+                if (isCase1) strokeWidth = 5;
+
+                const dashAttr = isBoldSolid ? '' : 'stroke-dasharray="4,4"';
+                // ========================================================
+
                 const isSameNeighbor = (rel.type === 'same_neighbor');
                 const isNeighbor = (rel.type === 'neighbor');
                 const hasHiddenStem = Boolean(rel.hiddenStem && !isNeighbor);
 
-                let strokeWidth = 2;
-                if (isSameNeighbor) strokeWidth = 6;
-                else if (isNeighbor) strokeWidth = 3.5;
-
                 const strokeColor = isSameNeighbor ? cLeft : `url(#${gradId})`;
 
                 if (!hasHiddenStem) {
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                    // 純相鄰連茹 (如 丙丁、丁戊) -> 實線
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} stroke-linecap="round" />`;
 
                     sortedIndices.forEach(idx => {
                         const x = rel.getX(idx);
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} stroke-linecap="round" />`;
                     });
                 } else {
+                    // 帶引出字的關係 (如 丁己夾戊、丙丙引辛、丙辛引癸)
                     const boxSize = 26;
                     const boxX = midX - boxSize / 2;
                     const boxY = yBar - boxSize / 2;
 
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
+                    // 橫向連接線（丁己夾戊在此會帶入 dashAttr，變成虛線）
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} />`;
 
-                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${isSameNeighbor ? 2.5 : strokeWidth}" />`;
+                    // 中央方塊保持實線框，文字清晰
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${isBoldSolid ? 2.5 : 1.8}" />`;
 
                     const hiddenCol = getRelColor(getElementColor(rel.hiddenStem));
                     let displayText = rel.hiddenStem;
@@ -1460,10 +1479,11 @@
 
                     svgHtml += `<text class="spawned-stem" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${displayColor}" onclick="${clickHandler}">${displayText}</text>`;
                     
+                    // 垂直向下連到天干的線（虛線時同樣帶入 dashAttr）
                     sortedIndices.forEach(idx => { 
                         const x = rel.getX(idx);
-                        const cap = isSameNeighbor ? 'stroke-linecap="round"' : '';
-                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${cap} />`;
+                        const cap = isBoldSolid ? 'stroke-linecap="round"' : '';
+                        svgHtml += `<line x1="${x}" y1="${yBar}" x2="${x}" y2="${yBottom}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} ${cap} />`;
                     });
                 }
 
