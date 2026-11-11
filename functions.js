@@ -146,10 +146,11 @@ function getRelColor(color) {
     const dark = isDarkMode();
     if (!dark) {
         if (color === "darkorange") return "#d35400";
-        if (color === "teal") return "#087f5b"; // Darker teal in light mode
+        if (color === "teal") return "#087f5b"; 
+        if (color === "pink") return "#d63384"; // Distinct deep pink in light mode
         return color;
     }
-    if (color === "teal") return "#20c997";     // Bright teal in dark mode
+    if (color === "teal") return "#20c997";     
     if (color === "orange") return "#ffaa33";
     if (color === "darkorange") return "#ff7700";
     if (color === "purple") return "#c77dff";
@@ -158,6 +159,7 @@ function getRelColor(color) {
     if (color === "blue") return "#66b2ff";
     if (color === "green") return "#5cdb95";
     if (color === "#d4af37") return "#ffd700";
+    if (color === "pink") return "#ff79c6";     // Vibrant neon pink in dark mode
     return color;
 } 
 
@@ -417,6 +419,28 @@ function findBranchRelationships(branches) {
                         active: [true, true],
                         markerType: 'circle'       // Combinations use circles
                     });
+                }
+            }
+        }
+    }
+    // -------------------------------- 
+
+    // --- ADD 六害 DETECTION HERE ---
+    if (typeof 六害 !== "undefined") {
+        for (const pair of 六害) {
+            for (let i = 0; i < N; i++) {
+                for (let j = i + 1; j < N; j++) {
+                    const b1 = branches[i];
+                    const b2 = branches[j];
+                    if ((b1 === pair[0] && b2 === pair[1]) || (b1 === pair[1] && b2 === pair[0])) {
+                        results.push({
+                            label: `${pair[0]}${pair[1]}相害`, // Or `${pair[0]}${pair[1]}害`
+                            color: "pink",
+                            indices: [i, j],
+                            active: [true, true],
+                            markerType: 'circle'          // Uses circle endpoints
+                        });
+                    }
                 }
             }
         }
