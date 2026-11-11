@@ -1312,26 +1312,26 @@
                 }
             }
 
-            // 3. 三同干沖出一殺
-            for (let i = 0; i < N; i++) {
-                for (let j = i + 1; j < N; j++) {
-                    for (let k = j + 1; k < N; k++) {
-                        const s1 = stems[i];
-                        const s2 = stems[j];
-                        const s3 = stems[k];
+            // 3. 三同干沖出一殺 (必須三字緊貼相鄰，如 丙丙丙O)
+            for (let i = 0; i < N - 2; i++) {  
+                const j = i + 1; // 緊貼的第二個字
+                const k = i + 2; // 緊貼的第三個字
 
-                        if (s1 === s2 && s2 === s3 && stemChongMap[s1]) {
-                            const qishaStem = stemChongMap[s1];
-                            const key = `three_same_${i}_${j}_${k}_${qishaStem}`;
-                            if (!seen.has(key)) {
-                                seen.add(key);
-                                results.push({
-                                    type: 'three_same',
-                                    indices: [i, j, k],
-                                    hiddenStem: qishaStem
-                                });
-                            }
-                        }
+                const s1 = stems[i];
+                const s2 = stems[j];
+                const s3 = stems[k];
+
+                // 確保天干非空，且三個字相鄰且完全相同
+                if (s1 && s1 === s2 && s2 === s3 && stemChongMap[s1]) {
+                    const qishaStem = stemChongMap[s1];
+                    const key = `three_same_${i}_${j}_${k}_${qishaStem}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        results.push({
+                            type: 'three_same',
+                            indices: [i, j, k],
+                            hiddenStem: qishaStem
+                        });
                     }
                 }
             }
@@ -1504,138 +1504,180 @@
             container.innerHTML = svgHtml;
         }
 
-        // --- INVISIBLE EARTHLY BRANCH RELATIONSHIPS (盲派 暗拱/暗夾) ---
-        function findInvisibleBranchRelationships(branches) {
+        // --- INVISIBLE EARTHLY BRANCH RELATIONSHIPS (盲派 暗拱/暗夾 & 實線/虛線規則) --- ok 
+        function findInvisibleBranchRelationships(branches) {   
             const results = [];  
             const N = branches.length;
             const seen = new Set();
 
-            const sanHeGong = {
-                "子": ["申", "辰"],
-                "酉": ["巳", "丑"],
-                "午": ["寅", "戌"],
-                "卯": ["亥", "未"]
-            };
+            const zhiOrder = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
-            const sixRelPairs = [
+            const liuHePairs = [
                 ["子", "丑"], ["寅", "亥"], ["卯", "戌"],
                 ["酉", "辰"], ["巳", "申"], ["午", "未"]
             ];
-            function getSixRelPartner(b) {
-                for (const pair of sixRelPairs) {
+
+            function getLiuHePartner(b) {
+                for (const pair of liuHePairs) {
                     if (pair[0] === b) return pair[1];
                     if (pair[1] === b) return pair[0];
                 }
                 return null;
             }
 
-            const zhiOrder = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+            function isLiuHe(b1, b2) {
+                return liuHePairs.some(pair => 
+                    (b1 === pair[0] && b2 === pair[1]) || (b1 === pair[1] && b2 === pair[0])
+                );
+            }
 
-            // 1. 檢查緊貼相鄰兩柱 (Distance 1)
-            for (let i = 0; i < N - 1; i++) {
-                const j = i + 1;
-                const b1 = branches[i];
-                const b2 = branches[j];
-                if (!b1 || !b2) continue;
+            // [1, 2, 3] 結構：始終由 1 和 3 拱出/夾出 2
+            const sanHeGroups = [
+                ["申", "子", "辰"], // 申(1) 辰(3) 生 子(2)
+                ["巳", "酉", "丑"], // 巳(1) 丑(3) 生 酉(2)
+                ["寅", "午", "戌"], // 寅(1) 戌(3) 生 午(2)
+                ["亥", "卯", "未"]  // 亥(1) 未(3) 生 卯(2)
+            ];
 
-                // 相鄰同字地支 (如 未未 -> 午)
-                if (b1 === b2) {
-                    const partner = getSixRelPartner(b1);
-                    const key = `same_neighbor_${i}_${j}_${b1}_${partner}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        results.push({
-                            type: 'same_neighbor',
-                            indices: [i, j],
-                            hiddenBranch: partner,
-                            color: partner ? getElementColor(partner) : null
-                        });
+            const sanHuiGroups = [
+                ["亥", "子", "丑"], // 亥(1) 丑(3) 生 子(2)
+                ["申", "酉", "戌"], // 申(1) 戌(3) 生 酉(2)
+                ["巳", "午", "未"], // 巳(1) 未(3) 生 午(2)
+                ["寅", "卯", "辰"]  // 寅(1) 辰(3) 生 卯(2)
+            ];
+
+            // 檢查 [1, 3] 拱夾生出 [2]，或常規隔位夾字 (Distance 2)
+            function getArchOrClampedBranch(b1, b2) {
+                // 1. 三合 [1, 3] 暗拱 [2] (如 申辰拱子、寅戌拱午)
+                for (const group of sanHeGroups) {
+                    const first = group[0];
+                    const middle = group[1];
+                    const last = group[2];
+                    if ((b1 === first && b2 === last) || (b1 === last && b2 === first)) {
+                        return middle;
                     }
-                    continue;
                 }
 
-                // 常規相鄰序數地支 (如 丑寅、卯辰) -> 普通相連 Bond
+                // 2. 三會 [1, 3] 暗夾 [2] (如 寅辰夾卯、亥丑夾子)
+                for (const group of sanHuiGroups) {
+                    const first = group[0];
+                    const middle = group[1];
+                    const last = group[2];
+                    if ((b1 === first && b2 === last) || (b1 === last && b2 === first)) {
+                        return middle;
+                    }
+                }
+
+                // 3. 常規地支隔位夾字 (Neighbors' Neighbor，如 子寅夾丑)
                 const idx1 = zhiOrder.indexOf(b1);
                 const idx2 = zhiOrder.indexOf(b2);
                 if (idx1 !== -1 && idx2 !== -1) {
-                    if ((idx2 - idx1 + 12) % 12 === 1 || (idx1 - idx2 + 12) % 12 === 1) {
-                        const key = `neighbor_${i}_${j}`;
-                        if (!seen.has(key)) {
-                            seen.add(key);
-                            results.push({
-                                type: 'neighbor',
-                                indices: [i, j],
-                                hiddenBranch: null
-                            });
-                        }
+                    if ((idx2 - idx1 + 12) % 12 === 2) {
+                        return zhiOrder[(idx1 + 1) % 12];
+                    } else if ((idx1 - idx2 + 12) % 12 === 2) {
+                        return zhiOrder[(idx2 + 1) % 12];
                     }
                 }
+
+                return null;
             }
 
-            // 2. 檢查間隔地支對
+            // 檢查三合 / 三會中 [1, 2] 或 [2, 3] 的半合半會（不生字，實線連接）
+            function isHalfComboPair(b1, b2) {
+                for (const group of [...sanHeGroups, ...sanHuiGroups]) {
+                    const [first, middle, last] = group;
+                    const is12 = (b1 === first && b2 === middle) || (b1 === middle && b2 === first);
+                    const is23 = (b1 === middle && b2 === last) || (b1 === last && b2 === middle);
+                    if (is12 || is23) return true;
+                }
+                return false;
+            }
+
+            // 遍歷所有支柱配對 (i < j)
             for (let i = 0; i < N; i++) {
                 for (let j = i + 1; j < N; j++) {
                     const b1 = branches[i];
                     const b2 = branches[j];
+                    if (!b1 || !b2) continue;
 
-                    // 三合暗拱
-                    for (const [targetHidden, pair] of Object.entries(sanHeGong)) {
-                        if ((b1 === pair[0] && b2 === pair[1]) || (b1 === pair[1] && b2 === pair[0])) {
-                            const key = `${i}_${j}_${targetHidden}`;
-                            if (!seen.has(key)) {
-                                seen.add(key);
-                                results.push({
-                                    indices: [i, j],
-                                    hiddenBranch: targetHidden,
-                                    color: getElementColor(targetHidden)
-                                });
-                            }
-                        }
-                    }
-
-                    // 兩地支相同但「非緊貼」（隔位，j > i + 1）時，暗拱六合之支
-                    if (b1 === b2 && j > i + 1) {
-                        const partner = getSixRelPartner(b1);
+                    // 規則 1: 相同字成對 (子子OO 或 子O子O) -> 依據六合引出對應天干地支（生出字，虛線 normal）
+                    if (b1 === b2) {
+                        const partner = getLiuHePartner(b1);
                         if (partner) {
-                            const key = `${i}_${j}_${partner}`;
+                            const key = `doubles_${i}_${j}_${partner}`;
                             if (!seen.has(key)) {
                                 seen.add(key);
                                 results.push({
+                                    type: 'doubles',
                                     indices: [i, j],
                                     hiddenBranch: partner,
                                     color: getElementColor(partner)
                                 });
                             }
                         }
+                        continue;
                     }
 
-                    // 暗夾中間地支 (Distance 2)
-                    const idx1 = zhiOrder.indexOf(b1);
-                    const idx2 = zhiOrder.indexOf(b2);
-                    if (idx1 !== -1 && idx2 !== -1) {
-                        if ((idx2 - idx1 + 12) % 12 === 2) {
-                            const hiddenIdx = (idx1 + 1) % 12;
-                            const targetHidden = zhiOrder[hiddenIdx];
-                            const key = `${i}_${j}_${targetHidden}`;
-                            if (!seen.has(key)) {
-                                seen.add(key);
-                                results.push({
-                                    indices: [i, j],
-                                    hiddenBranch: targetHidden,
-                                    color: getElementColor(targetHidden)
-                                });
-                            }
-                        } else if ((idx1 - idx2 + 12) % 12 === 2) {
-                            const hiddenIdx = (idx2 + 1) % 12;
-                            const targetHidden = zhiOrder[hiddenIdx];
-                            const key = `${i}_${j}_${targetHidden}`;
-                            if (!seen.has(key)) {
-                                seen.add(key);
-                                results.push({
-                                    indices: [i, j],
-                                    hiddenBranch: targetHidden,
-                                    color: getElementColor(targetHidden)
-                                });
+                    // 規則 2: 異字六合 (子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未) -> 粗實線，引出字為 "合"
+                    if (isLiuHe(b1, b2)) {
+                        const key = `liuhe_${i}_${j}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            results.push({
+                                type: 'liuhe',
+                                indices: [i, j],
+                                hiddenBranch: '合'
+                            });
+                        }
+                        continue;
+                    }
+
+                    // 規則 3: [1, 3] 拱出/夾出 [2]，或常規隔位夾出中間地支 -> normal 虛線 (Dotted)，生出字
+                    const spawnedBranch = getArchOrClampedBranch(b1, b2);
+                    if (spawnedBranch) {
+                        const key = `arch_clamp_${i}_${j}_${spawnedBranch}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            results.push({
+                                type: 'clamping',
+                                indices: [i, j],
+                                hiddenBranch: spawnedBranch,
+                                color: getElementColor(spawnedBranch)
+                            });
+                        }
+                        continue;
+                    }
+
+                    // 規則 4: 三合 / 三會中的 [1, 2] 與 [2, 3] (如 申子, 子辰, 寅午, 午戌, 亥子, 寅卯...) -> 粗實線，不生字
+                    if (isHalfComboPair(b1, b2)) {
+                        const key = `half_combo_${i}_${j}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            results.push({
+                                type: 'half_combo',
+                                indices: [i, j],
+                                hiddenBranch: null
+                            });
+                        }
+                        continue;
+                    }
+
+                    // 規則 5: 緊貼相鄰序數地支連茹 (如 巳辰, 戌酉 等) -> 粗實線，不生字
+                    if (j === i + 1) {
+                        const idx1 = zhiOrder.indexOf(b1);
+                        const idx2 = zhiOrder.indexOf(b2);
+                        if (idx1 !== -1 && idx2 !== -1) {
+                            if ((idx2 - idx1 + 12) % 12 === 1 || (idx1 - idx2 + 12) % 12 === 1) {
+                                const key = `neighbor_${i}_${j}`;
+                                if (!seen.has(key)) {
+                                    seen.add(key);
+                                    results.push({
+                                        type: 'neighbor',
+                                        indices: [i, j],
+                                        hiddenBranch: null
+                                    });
+                                }
+                                continue;
                             }
                         }
                     }
@@ -1723,52 +1765,67 @@
                     </defs>
                 `;
 
-                const isSameNeighbor = (rel.type === 'same_neighbor');
-                const isNeighbor = (rel.type === 'neighbor');
-                const hasHiddenBranch = Boolean(rel.hiddenBranch && !isNeighbor);
+                // ================= 【實線 / 虛線 判定】 =================
+                // 1. 六合 (如 子丑、卯戌) -> 粗實線
+                const isCase1 = (rel.type === 'liuhe');
+                // 2. 三合 / 三會中的 [1, 2] 與 [2, 3] (如 申子, 子辰, 寅午, 午戌) -> 粗實線
+                const isCase2 = (rel.type === 'half_combo');
+                // 3. 緊貼相鄰地支連茹 (如 巳辰、戌酉) -> 粗實線
+                const isCase3 = (rel.type === 'neighbor');
 
-                let strokeWidth = 2;
-                if (isSameNeighbor) strokeWidth = 6;
-                else if (isNeighbor) strokeWidth = 3.5;
+                // doubles(同字成對生字) 和 clamping(暗拱/暗夾生字) 一律為 normal 虛線 (dotted)
+                const isBoldSolid = isCase1 || isCase2 || isCase3;
 
-                const strokeColor = isSameNeighbor ? cLeft : (hasHiddenBranch ? getRelColor(rel.color) : `url(#${gradId})`);
+                let strokeWidth = isBoldSolid ? 3.5 : 2;
+                const dashAttr = isBoldSolid ? '' : 'stroke-dasharray="4,4"';
+                // ========================================================
+
+                const hasHiddenBranch = Boolean(rel.hiddenBranch);
+
+                const strokeColor = (hasHiddenBranch && rel.color)
+                    ? getRelColor(rel.color) 
+                    : `url(#${gradId})`;
 
                 if (!hasHiddenBranch) {
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                    // 無生出字：粗實線連接
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} stroke-linecap="round" />`;
 
                     sortedIndices.forEach(idx => {
                         const x = rel.getX(idx);
-                        svgHtml += `<line x1="${x}" y1="${yTop + 2}" x2="${x}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" />`;
+                        svgHtml += `<line x1="${x}" y1="${yTop + 2}" x2="${x}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} stroke-linecap="round" />`;
                     });
                 } else {
+                    // 帶生出字：doubles(虛線)、[1, 3]拱夾(虛線) 或 六合(實線, 生 "合")
                     const boxSize = 26;
                     const boxX = midX - boxSize / 2;
                     const boxY = yBar - boxSize / 2;
 
-                    const cap = isSameNeighbor ? 'stroke-linecap="round"' : '';
-                    svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${cap} />`;
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-                    svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${cap} />`;
+                    const cap = isBoldSolid ? 'stroke-linecap="round"' : '';
+                    svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} ${cap} />`;
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} />`;
+                    svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} ${cap} />`;
 
-                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${isSameNeighbor ? 2.5 : strokeWidth}" />`;
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${strokeColor}" stroke-width="${isBoldSolid ? 2.5 : 1.8}" />`;
 
-                    const branchTextColor = rel.color ? getRelColor(rel.color) : strokeColor;
-
-                    svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}'); toggleBranchHiddenStems(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
+                    if (rel.hiddenBranch === "合") {
+                        const displayColor = isDarkMode() ? "#e0e0e0" : "#222";
+                        svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${displayColor}" onclick="event.stopPropagation();">合</text>`;
+                    } else {
+                        const branchTextColor = rel.color ? getRelColor(rel.color) : strokeColor;
+                        svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}'); toggleBranchHiddenStems(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
+                    }
                 } 
 
-                if (!isSameNeighbor) {
-                    sortedIndices.forEach(idx => {
-                        const x = rel.getX(idx);
-                        const dotCol = getRelColor(getElementColor(branches[idx]));
-                        if (hasHiddenBranch) {
-                            svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="3" fill="${strokeColor}" />`;
-                        } else {
-                            svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="5" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
-                        }
-                    });
-                }
+                sortedIndices.forEach(idx => {
+                    const x = rel.getX(idx);
+                    const dotCol = getRelColor(getElementColor(branches[idx]));
+                    if (hasHiddenBranch) {
+                        svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="3" fill="${dotCol}" />`;
+                    } else {
+                        svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="5" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
+                    }
+                });
             }); 
 
             svgHtml += `</svg>`;
@@ -2346,6 +2403,11 @@
         function triggerArrows(clickedElement, sourceChar, originBranchElem = null, suppressCross = false, arrowOpacity = 1) { 
             // --- UPDATE THIS BLOCK ---
             if (typeof isZuoGongMode !== 'undefined' && isZuoGongMode) {
+                // 🚫 Ignore any clicks on bottom hidden stems
+                if (clickedElement && (clickedElement.closest('.bazi-rect-hidden') || clickedElement.closest('[id^="rect_h_r"]'))) {
+                    return 0;
+                }
+
                 if (typeof handleZuoGongClick === 'function') {
                     handleZuoGongClick(clickedElement, sourceChar);
                 }
@@ -2969,7 +3031,13 @@
             document.querySelectorAll('.main-pillar-branch, .time-pillar-branch, text.spawned-branch').forEach(branchElem => {
                 branchElem.onclick = function(event) {  
                     event.stopPropagation(); 
-                    const branchChar = this.textContent.trim();
+                    
+                    // 🚫 In Zuo Gong Mode, earthly branches and their hidden stems should not trigger
+                    if (typeof isZuoGongMode !== 'undefined' && isZuoGongMode) {
+                        return;
+                    }
+
+                    const branchChar = this.textContent.trim(); 
 
                     // 1. Check Branch Six Clashes (地支六沖) at 100% opacity
                     const chongCount = triggerDizhiArrows(this, branchChar, true);

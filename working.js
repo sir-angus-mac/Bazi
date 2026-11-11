@@ -3,6 +3,7 @@
 
 let isZuoGongMode = false;
 let isSimulationRunning = false;
+let currentSessionId = 0; 
 const activeZuoGongTooltips = new Map();
 const activeWaitBadges = new Map(); // key: spotIndex -> { count: number, element: HTMLElement }
 const exhaustedStartPoints = new Set(); // Tracks stem elements that have already spawned a moving card
@@ -129,18 +130,29 @@ function toggleZuoGongMode() {
  * Clears all active 做功 tooltips, waiting badges, exhausted points, and resets simulation state
  */
 function clearAllZuoGongTooltips() {
+    // 1. Invalidate current simulation session so any background async loop exits immediately
+    currentSessionId++;
+    isSimulationRunning = false;
+
     if (resolutionTimeout) {
         clearTimeout(resolutionTimeout);
         resolutionTimeout = null;
     }
-    isSimulationRunning = false;
-    document.querySelectorAll('.zuogong-tooltip').forEach(el => el.remove());
-    document.querySelectorAll('.zuogong-wait-badge').forEach(el => el.remove());
+
+    // 2. Forcibly cancel all active Web Animations and delete the DOM nodes
+    const elementsToKill = document.querySelectorAll('.zuogong-tooltip, .zuogong-hopper, .zuogong-wait-badge');
+    elementsToKill.forEach(el => {
+        if (el.getAnimations) {
+            el.getAnimations().forEach(anim => anim.cancel());
+        }
+        el.remove();
+    });
+
+    // 3. Clear data structures
     activeZuoGongTooltips.clear();
     activeWaitBadges.clear();
     exhaustedStartPoints.clear();
-}
-
+} 
 /**
  * Helper to get the center coordinate of any element relative to document.body
  */
@@ -561,7 +573,13 @@ function createHopperElement(char, score, x, y, isLarge) {
 /**
  * Performs a single parabolic bunny hop from (fromX, fromY) to (toX, toY)
  */
-async function hopStep(element, fromX, fromY, toX, toY, duration = 380) {
+async function hopStep(element, fromX, fromY, toX, toY, duration = 380, sessionId = currentSessionId) {
+    // Immediate check before starting
+    if (!isZuoGongMode || sessionId !== currentSessionId) {
+        if (element) element.remove();
+        return false;
+    }
+
     const deltaX = fromX - toX;
     const deltaY = fromY - toY;
 
@@ -577,8 +595,20 @@ async function hopStep(element, fromX, fromY, toX, toY, duration = 380) {
         easing: 'ease-in-out'
     });
 
-    await anim.finished;
-}
+    try {
+        await anim.finished;
+    } catch (e) {
+        // Animation was cancelled
+        return false;
+    }
+
+    // Post-hop check
+    if (!isZuoGongMode || sessionId !== currentSessionId) {
+        if (element) element.remove();
+        return false;
+    }
+    return true;
+} 
 
 /**
  * Fades out and removes an element
@@ -666,24 +696,20 @@ async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, is
     return false;
 }
 
-/**
- * Core Movement Engine:
- * Moves Left -> Bounces off Left Wall -> Moves Right -> Finishes at Right Wall
- */
 async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo) {
-    // RULE: If this start point has already spawned a moving card, prevent spawning a second time!
+    const sessionId = currentSessionId; // <--- Capture current session ID
+
     if (exhaustedStartPoints.has(stemElem)) {
         return;
     }
-    exhaustedStartPoints.add(stemElem); // Mark as spent/exhausted
+    exhaustedStartPoints.add(stemElem);
 
-    // Starting-point non-moving card setup: DOTTED BORDER, solid light grey
     const originTooltip = spawnZuoGongTooltip(stemElem, stemChar);
     if (originTooltip) {
         originTooltip.style.opacity = '1';
         originTooltip.style.filter = 'none';
         originTooltip.style.backgroundColor = getLightGreyBg();
-        originTooltip.style.borderStyle = 'dotted'; // Dotted border for non-moving starting card
+        originTooltip.style.borderStyle = 'dotted';
         originTooltip.style.borderWidth = '2.5px';
         originTooltip.style.borderColor = isDarkMode() ? '#94a3b8' : '#64748b';
         originTooltip.style.transition = 'background-color 0.4s ease, border-color 0.4s ease';
@@ -694,16 +720,17 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo) {
     const startSpotObj = gridInfo.spots[startSpot];
     const currentY = isMain ? startSpotObj.mainY : startSpotObj.svgY;
 
-    // Create the moving hopper: SOLID BORDER, always on top
     const hopper = createHopperElement(stemChar, walkerScore, startSpotObj.x, currentY, isMain);
     document.body.appendChild(hopper);
 
     let curSpot = startSpot;
 
-    // ==========================================
-    // PHASE 1: MOVE LEFTWARD TOWARDS SPOT 1
-    // ==========================================
+    // Helper macro to exit cleanly
+    const shouldAbort = () => !isZuoGongMode || sessionId !== currentSessionId;
+
+    // PHASE 1: MOVE LEFT
     while (curSpot > 1) {
+        if (shouldAbort()) { hopper.remove(); return; }
         const nextSpot = curSpot - 1;
         const curSpotObj = gridInfo.spots[curSpot];
         const nextSpotObj = gridInfo.spots[nextSpot];
@@ -712,30 +739,28 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo) {
         const toX = nextSpotObj.x;
         const yPos = isMain ? nextSpotObj.mainY : nextSpotObj.svgY;
 
-        await hopStep(hopper, fromX, yPos, toX, yPos, 380);
+        const success = await hopStep(hopper, fromX, yPos, toX, yPos, 380, sessionId);
+        if (!success || shouldAbort()) { hopper.remove(); return; }
         curSpot = nextSpot;
 
         const toppled = await handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPos, toX, gridInfo);
-        if (toppled) return;
+        if (toppled || shouldAbort()) return;
     }
 
-    // ==========================================
-    // PHASE 2: BOUNCE OFF THE LEFT WALL
-    // ==========================================
+    // PHASE 2: BOUNCE OFF LEFT WALL
+    if (shouldAbort()) { hopper.remove(); return; }
     const spot1Obj = gridInfo.spots[1];
     const yPos = isMain ? spot1Obj.mainY : spot1Obj.svgY;
 
-    // Hop to left wall
-    await hopStep(hopper, spot1Obj.x, yPos, gridInfo.leftWallX, yPos, 280);
-
-    // Bounce off left wall back to spot 1
-    await hopStep(hopper, gridInfo.leftWallX, yPos, spot1Obj.x, yPos, 280);
+    await hopStep(hopper, spot1Obj.x, yPos, gridInfo.leftWallX, yPos, 280, sessionId);
+    if (shouldAbort()) { hopper.remove(); return; }
+    await hopStep(hopper, gridInfo.leftWallX, yPos, spot1Obj.x, yPos, 280, sessionId);
+    if (shouldAbort()) { hopper.remove(); return; }
     curSpot = 1;
 
-    // ==========================================
-    // PHASE 3: MOVE RIGHTWARD TOWARDS RIGHT WALL
-    // ==========================================
+    // PHASE 3: MOVE RIGHT
     while (curSpot < gridInfo.totalSpots) {
+        if (shouldAbort()) { hopper.remove(); return; }
         const nextSpot = curSpot + 1;
         const curSpotObj = gridInfo.spots[curSpot];
         const nextSpotObj = gridInfo.spots[nextSpot];
@@ -744,22 +769,26 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo) {
         const toX = nextSpotObj.x;
         const yPosCurrent = isMain ? nextSpotObj.mainY : nextSpotObj.svgY;
 
-        await hopStep(hopper, fromX, yPosCurrent, toX, yPosCurrent, 380);
+        const success = await hopStep(hopper, fromX, yPosCurrent, toX, yPosCurrent, 380, sessionId);
+        if (!success || shouldAbort()) { hopper.remove(); return; }
         curSpot = nextSpot;
 
         const toppled = await handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPosCurrent, toX, gridInfo);
-        if (toppled) return;
+        if (toppled || shouldAbort()) return;
     }
 
-    // ==========================================
-    // PHASE 4: FINISH JOURNEY AT THE RIGHT WALL
-    // ==========================================
+    // PHASE 4: FINISH AT RIGHT WALL
+    if (shouldAbort()) { hopper.remove(); return; }
     const lastSpotObj = gridInfo.spots[gridInfo.totalSpots];
     const yPosFinal = isMain ? lastSpotObj.mainY : lastSpotObj.svgY;
 
-    await hopStep(hopper, lastSpotObj.x, yPosFinal, gridInfo.rightWallX, yPosFinal, 320);
-    await fadeOutAndRemove(hopper);
-}
+    await hopStep(hopper, lastSpotObj.x, yPosFinal, gridInfo.rightWallX, yPosFinal, 320, sessionId);
+    if (!shouldAbort()) {
+        await fadeOutAndRemove(hopper);
+    } else {
+        hopper.remove();
+    }
+} 
 
 /**
  * Recursive Rescue Engine:
@@ -801,14 +830,16 @@ async function requestRescueOrWalk(stemElem, stemChar, isMain, gridInfo, visited
     }
 }
 
-/**
- * Main click handler called when clicking a stem in 做功 Mode
- */
 async function handleZuoGongClick(clickedElement, stemChar) {
     if (!clickedElement || !stemChar || stemChar === '合') return;
 
+    // 🚫 PREVENT HIDDEN STEMS FROM TRIGGERING ZUO GONG
+    if (clickedElement.closest && (clickedElement.closest('.bazi-rect-hidden') || clickedElement.closest('[id^="rect_h_r"]'))) {
+        return;
+    }
+
     // Prevent multiple overlapping simulations
-    if (isSimulationRunning) return;
+    if (isSimulationRunning) return; 
 
     if (resolutionTimeout) {
         clearTimeout(resolutionTimeout);
