@@ -552,6 +552,19 @@ body {
     filter: drop-shadow(0 0 3px var(--renyuan-color, #ffd700));
 } 
 
+/* Bold and subtly grey inner background for 做功 mode button */
+#zuogongBtn {
+    font-weight: 900;
+}
+
+#zuogongBtn:not(.active-zuogong) {
+    background-color: var(--card-hover); /* #eeeeee in light mode, #2d2d2d in dark mode */
+}
+
+#zuogongBtn:not(.active-zuogong):hover {
+    background-color: var(--sub-rect-bg); /* slightly stronger grey on hover */
+}
+
 /* Button active state for 做功 mode */
 .btn-dayun.active-zuogong {
     background-color: #d35400;
@@ -642,3 +655,7 @@ body {
 .zuogong-tooltip.large {
     z-index: 2000;
 } 
+
+#splitBtn {
+    border-style: dotted;
+}

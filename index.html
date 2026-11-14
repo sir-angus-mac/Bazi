@@ -1809,11 +1809,14 @@
                 const isCase5 = (rel.type === 'arch_combo');
                 const isCase6 = (rel.type === 'doubles_neighbor');
 
-                const isBoldSolid = isCase1 || isCase2 || isCase3 || isCase4 || isCase5 || isCase6;
+                const luckPillars = ["大運", "流年", "流月", "流日", "流時"];
+                const isBetweenLuckPillars = headers && rel.indices.every(idx => luckPillars.includes(headers[idx]));
+
+                const isBoldSolid = !isBetweenLuckPillars && (isCase1 || isCase2 || isCase3 || isCase4 || isCase5 || isCase6);
 
                 const strokeWidth = isBoldSolid ? 3.5 : 2;
                 const dashAttr = isBoldSolid ? '' : 'stroke-dasharray="4,4"';
-                // ========================================================
+                // ======================================================== 
 
                 const hasHiddenBranch = Boolean(rel.hiddenBranch);
 

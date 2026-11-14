@@ -8,6 +8,7 @@ const activeZuoGongTooltips = new Map();
 const activeWaitBadges = new Map(); // key: spotIndex -> { count: number, element: HTMLElement }
 const exhaustedStartPoints = new Set(); // Tracks stem elements that have already spawned a moving card
 let resolutionTimeout = null;
+const bypassedQiShaElems = new Set();   // Tracks trapped 七殺 that ran out of rescue scenarios (red circle)
 
 // 12 Life Stages Point Map (十二長生計分表)
 const zuoGongScoreMap = {
@@ -152,6 +153,7 @@ function clearAllZuoGongTooltips() {
     activeZuoGongTooltips.clear();
     activeWaitBadges.clear();
     exhaustedStartPoints.clear();
+    bypassedQiShaElems.clear();
 } 
 /**
  * Helper to get the center coordinate of any element relative to document.body
@@ -211,6 +213,40 @@ function spawnZuoGongTooltip(targetElem, stemChar, customScore = null) {
     document.body.appendChild(tooltip);
     activeZuoGongTooltips.set(targetElem, tooltip);
     return tooltip;
+}
+
+/**
+ * Draws a red circle on a blocking 七殺 that ran out of rescue scenarios (Situation A)
+ */
+function markQiShaBypassed(qishaElem, qishaChar) {
+    bypassedQiShaElems.add(qishaElem);
+    const tooltip = activeZuoGongTooltips.get(qishaElem) || spawnZuoGongTooltip(qishaElem, qishaChar);
+    if (!tooltip) return;
+
+    tooltip.style.backgroundColor = getLightRedBg();
+
+    if (!tooltip.querySelector('.zuogong-red-circle')) {
+        const circle = document.createElement('div');
+        circle.className = 'zuogong-red-circle';
+        circle.style.position = 'absolute';
+        circle.style.left = '50%';
+        circle.style.top = '50%';
+        circle.style.width = '78px';
+        circle.style.height = '78px';
+        circle.style.transform = 'translate(-50%, -50%)';
+        circle.style.border = '3.5px solid #ff4d4f';
+        circle.style.borderRadius = '50%';
+        circle.style.boxShadow = '0 0 10px rgba(255, 77, 79, 0.65)';
+        circle.style.pointerEvents = 'none';
+        circle.style.boxSizing = 'border-box';
+        tooltip.appendChild(circle);
+
+        circle.animate([
+            { transform: 'translate(-50%, -50%) scale(0.4)', opacity: 0 },
+            { transform: 'translate(-50%, -50%) scale(1.08)', opacity: 1, offset: 0.7 },
+            { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }
+        ], { duration: 350, easing: 'ease-out', fill: 'forwards' });
+    }
 }
 
 /**
@@ -416,13 +452,32 @@ function findStartingSpot(elem, isMain, gridInfo) {
  * 2. Any main stem linked by a normal (solid, non-dotted) line in invisibleStemRelContainer is trapped.
  */
 function isStemTrapped(elem, char, isMain, gridInfo) {
-    if (!isMain) return true; // Invisible stems are trapped until rescued
+    if (!isMain) return true; // All stems in invisibleStemRelContainer
 
     const col = parseInt(elem.getAttribute('data-col'), 10);
     const mainStems = gridInfo.mainStems.map(el => el.textContent.trim());
+    const headers = Array.from(document.querySelectorAll('#baziGrid .bazi-header')).map(el => el.textContent.trim());
 
     if (typeof findInvisibleStemRelationships === 'function') {
-        const rels = findInvisibleStemRelationships(mainStems);
+        let rels = findInvisibleStemRelationships(mainStems);
+
+        // Match renderInvisibleStemRelationships filtering (auxiliary pillars & Split mode)
+        if (headers.length === mainStems.length) {
+            rels = rels.filter(rel => !rel.indices.some(idx =>
+                headers[idx] === "命宮" || headers[idx] === "胎元" || headers[idx] === "胎息" || headers[idx] === "身宮"
+            ));
+
+            if (typeof isSplitMode !== 'undefined' && isSplitMode) {
+                const groupA = ["命宮", "胎元", "胎息", "身宮", "時", "日", "月", "年", "元運"];
+                const groupB = ["大運", "流年", "流月", "流日", "流時"];
+                rels = rels.filter(rel => {
+                    const hasA = rel.indices.some(idx => groupA.includes(headers[idx]));
+                    const hasB = rel.indices.some(idx => groupB.includes(headers[idx]));
+                    return !(hasA && hasB);
+                });
+            }
+        }
+
         for (const rel of rels) {
             const isCase1 = (rel.type === 'same_neighbor');
             const isCase2 = (rel.type === 'neighbor');
@@ -436,7 +491,7 @@ function isStemTrapped(elem, char, isMain, gridInfo) {
     }
 
     return false;
-}
+} 
 
 /**
  * Finds all stem candidates on the board matching targetChar
@@ -477,6 +532,99 @@ async function flashGreenVictory(element) {
     });
     await anim.finished;
 }
+
+/**
+ * Brief amber push-back animation when a Phase A card reverses direction early
+ */
+async function pushReverseBump(element, fromX, yPos, toX) {
+    const pushDir = (fromX >= toX) ? 1 : -1;
+    const origBorder = element.style.borderColor;
+    const origShadow = element.style.boxShadow;
+
+    element.style.borderColor = '#f59e0b';
+    element.style.boxShadow = '0 0 28px rgba(245, 158, 11, 0.9)';
+
+    const anim = element.animate([
+        { transform: 'translate(-50%, -50%) scale(1)', offset: 0 },
+        { transform: `translate(-50%, -50%) translate(${pushDir * 14}px, -12px) scale(1.12)`, offset: 0.4 },
+        { transform: 'translate(-50%, -50%) scale(1)', offset: 1 }
+    ], {
+        duration: 320,
+        easing: 'ease-out'
+    });
+
+    try {
+        await anim.finished;
+    } catch (e) {
+        // Animation cancelled
+    }
+
+    element.style.borderColor = origBorder;
+    element.style.boxShadow = origShadow;
+}
+
+/**
+ * Dramatic Knockout Animation (Topple):
+ * Triggers when a MAIN moving card in Phase B steps onto an active MAIN non-moving 七殺 whose score is >= its own.
+ */
+async function bounceAwayAndFade(element, fromX, fromY, targetX, targetY) {
+    const dx = fromX - targetX;
+    const dy = fromY - targetY;
+    const recoilDir = dx >= 0 ? 1 : -1;
+
+    element.style.left = `${targetX}px`;
+    element.style.top = `${targetY}px`;
+
+    // 1. Approach impact point
+    const approachAnim = element.animate([
+        { transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(1)`, offset: 0 },
+        { transform: `translate(-50%, -50%) translate(${dx * 0.2}px, -10px) scale(1.1)`, offset: 1 }
+    ], { duration: 200, easing: 'ease-in' });
+    await approachAnim.finished;
+
+    // 2. Impact flash & shudder
+    element.style.borderColor = '#ff4d4f';
+    element.style.boxShadow = '0 0 35px rgba(255, 77, 79, 0.95)';
+    const numEl = element.querySelector('.zuogong-num');
+    if (numEl) numEl.style.color = '#ff4d4f';
+
+    const impactShake = element.animate([
+        { transform: `translate(-50%, -50%) translate(${dx * 0.2 - 8}px, -14px) scale(1.18)` },
+        { transform: `translate(-50%, -50%) translate(${dx * 0.2 + 8}px, -6px) scale(1.14)` },
+        { transform: `translate(-50%, -50%) translate(${dx * 0.2}px, -10px) scale(1.1)` }
+    ], { duration: 130, easing: 'linear' });
+    await impactShake.finished;
+
+    // 3. High dramatic knockout arc backwards and tumbling down
+    const recoilAnim = element.animate([
+        {
+            transform: `translate(-50%, -50%) translate(${dx * 0.2}px, -10px) rotate(0deg) scale(1.1)`,
+            opacity: 1,
+            offset: 0
+        },
+        {
+            transform: `translate(-50%, -50%) translate(${dx * 0.2 + recoilDir * 50}px, -100px) rotate(${recoilDir * 45}deg) scale(1.05)`,
+            opacity: 0.95,
+            offset: 0.45
+        },
+        {
+            transform: `translate(-50%, -50%) translate(${dx * 0.2 + recoilDir * 95}px, -20px) rotate(${recoilDir * 90}deg) scale(0.85)`,
+            opacity: 0.7,
+            offset: 0.75
+        },
+        {
+            transform: `translate(-50%, -50%) translate(${dx * 0.2 + recoilDir * 130}px, 60px) rotate(${recoilDir * 140}deg) scale(0.35)`,
+            opacity: 0,
+            offset: 1
+        }
+    ], {
+        duration: 650,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        fill: 'forwards'
+    });
+    await recoilAnim.finished;
+    element.remove();
+} 
 
 /**
  * Dramatic Knockout Animation (Topple):
@@ -622,37 +770,36 @@ async function fadeOutAndRemove(element) {
     element.remove();
 }
 
-/**
- * Checks spot interactions for a moving card:
- * 1. 七殺 encounter:
- *    - Moving cards spawned from invisible stems NEVER interact with 七殺.
- *    - ONLY main non-moving stems on the board can topple main moving cards.
- *    - Once a start point spawns a moving card, it CANNOT topple any moving cards!
- * 2. 偏財 encounter:
- *    - Once a start point spawns a moving card, it CANNOT spawn a moving card a second time!
- */
-async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPos, toX, gridInfo) {
+async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPos, toX, gridInfo, direction, hasVisitedOpposite) {
     const targetPianCaiChar = zuoGongPianCaiDict[stemChar];
     const targetQiShaChar = (typeof qiShaDict !== 'undefined') ? qiShaDict[stemChar] : null;
 
     const stemsHere = getStemsAtSpot(curSpot, gridInfo);
 
     // --- CONDITION 1: CHECK 七殺 ENCOUNTER ---
-    // ONLY main moving cards ever interact with 七殺!
+    // ONLY main moving cards ever interact with 七殺! 
     if (isMain && targetQiShaChar) {
         const mainQishaCandidate = stemsHere.find(st => st.char === targetQiShaChar && st.isMain);
 
         if (mainQishaCandidate) {
-            // RULE: If this start point has already spawned a moving card, it CANNOT topple any moving cards!
             const isExhausted = exhaustedStartPoints.has(mainQishaCandidate.elem);
+            const isBypassed = bypassedQiShaElems.has(mainQishaCandidate.elem);
 
-            if (!isExhausted) {
+            if (!isExhausted && !isBypassed) {
                 const qishaScore = getEffectiveScore(mainQishaCandidate.elem, mainQishaCandidate.char);
 
                 if (qishaScore >= walkerScore) {
                     spawnZuoGongTooltip(mainQishaCandidate.elem, mainQishaCandidate.char);
-                    await bounceAwayAndFade(hopper, fromX, yPos, toX, yPos);
-                    return true; // Main walker toppled!
+
+                    if (!hasVisitedOpposite) {
+                        // Hasn't gone in the pushed direction yet -> push it to reverse early!
+                        await pushReverseBump(hopper, fromX, yPos, toX);
+                        return 'reverse';
+                    } else {
+                        // Already went in that direction before -> topple it!
+                        await bounceAwayAndFade(hopper, fromX, yPos, toX, yPos);
+                        return 'toppled';
+                    }
                 } else if (walkerScore > qishaScore) {
                     // Main walker successfully conquered the main 七殺: Flash green for 1 second!
                     spawnZuoGongTooltip(mainQishaCandidate.elem, mainQishaCandidate.char);
@@ -678,14 +825,18 @@ async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, is
             let pcTooltip = activeZuoGongTooltips.get(pc.elem) || spawnZuoGongTooltip(pc.elem, pc.char);
             addScoreToTooltip(pcTooltip, walkerScore);
 
-            // If this 偏財 was trapped (light red), it is now FREED by its 七殺!
-            pcTooltip.style.backgroundColor = getLightGreyBg();
+            // Non-moving card moves in the SAME direction the 七殺 is moving
+            if (!exhaustedStartPoints.has(pc.elem)) { 
+                // If this 偏財 was trapped (light red), it is now FREED by its 七殺!
+                pcTooltip.style.backgroundColor = getLightGreyBg();
 
-            // RULE: Once a start point spawns a moving card, it CANNOT spawn a moving card a second time!
-            if (!exhaustedStartPoints.has(pc.elem)) {
                 incrementWaitingSpot(curSpot, toX, yPos, isMain);
                 try {
-                    await walkWord(pc.elem, pc.char, pc.isMain, curSpot, gridInfo);
+                    const isInvisibleOrNormalLine = isStemTrapped(pc.elem, pc.char, pc.isMain, gridInfo);
+                    const pushedDir = (direction === 'right' && isInvisibleOrNormalLine)
+                        ? 'left'
+                        : (pc.isMain ? direction : 'left'); 
+                    await walkWord(pc.elem, pc.char, pc.isMain, curSpot, gridInfo, pushedDir);
                 } finally {
                     decrementWaitingSpot(curSpot);
                 }
@@ -693,11 +844,11 @@ async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, is
         }
     }
 
-    return false;
-}
+    return 'none';
+} 
 
-async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo) {
-    const sessionId = currentSessionId; // <--- Capture current session ID
+async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo, initialDirection = 'left') {
+    const sessionId = currentSessionId;
 
     if (exhaustedStartPoints.has(stemElem)) {
         return;
@@ -724,69 +875,145 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo) {
     document.body.appendChild(hopper);
 
     let curSpot = startSpot;
+    let currentDirection = initialDirection;
+    let hasVisitedLeft = false;
+    let hasVisitedRight = false;
 
-    // Helper macro to exit cleanly
     const shouldAbort = () => !isZuoGongMode || sessionId !== currentSessionId;
 
-    // PHASE 1: MOVE LEFT
-    while (curSpot > 1) {
+    while (true) {
+        if (currentDirection === 'left') {
+            hasVisitedLeft = true;
+        } else {
+            hasVisitedRight = true;
+        }
+
+        const step = (currentDirection === 'left') ? -1 : 1;
+        const limit = (currentDirection === 'left') ? 1 : gridInfo.totalSpots;
+        const hasVisitedOpposite = (currentDirection === 'left') ? hasVisitedRight : hasVisitedLeft;
+
+        let outcome = 'wall';
+
+        while (currentDirection === 'left' ? curSpot > limit : curSpot < limit) {
+            if (shouldAbort()) { hopper.remove(); return; }
+
+            const nextSpot = curSpot + step;
+            const curSpotObj = gridInfo.spots[curSpot];
+            const nextSpotObj = gridInfo.spots[nextSpot];
+
+            const fromX = curSpotObj.x;
+            const toX = nextSpotObj.x;
+            const curY = isMain ? curSpotObj.mainY : curSpotObj.svgY;
+            const yPos = isMain ? nextSpotObj.mainY : nextSpotObj.svgY;
+
+            // --- HALF-STEP LOOKAHEAD FOR TRAPPED MAIN 七殺 ---
+            let justBypassed = false;
+            const targetQiShaChar = (typeof qiShaDict !== 'undefined') ? qiShaDict[stemChar] : null;
+
+            if (isMain && targetQiShaChar && nextSpotObj.isPillar) {
+                const nextStems = getStemsAtSpot(nextSpot, gridInfo);
+                const nextQiSha = nextStems.find(st => st.char === targetQiShaChar && st.isMain);
+
+                if (
+                    nextQiSha &&
+                    !exhaustedStartPoints.has(nextQiSha.elem) &&
+                    !bypassedQiShaElems.has(nextQiSha.elem)
+                ) {
+                    const qishaScore = getEffectiveScore(nextQiSha.elem, nextQiSha.char);
+
+                    // Only intercept if this 七殺 is supposed to block our card AND is in a normal SVG line
+                    if (qishaScore >= walkerScore && isStemTrapped(nextQiSha.elem, nextQiSha.char, true, gridInfo)) {
+                        // Card pauses half a step away and waits
+                        incrementWaitingSpot(curSpot, fromX, curY, isMain);
+                        try {
+                            await requestRescueOrWalk(nextQiSha.elem, nextQiSha.char, true, gridInfo);
+                        } finally {
+                            decrementWaitingSpot(curSpot);
+                        }
+
+                        if (shouldAbort()) { hopper.remove(); return; }
+
+                        if (exhaustedStartPoints.has(nextQiSha.elem)) {
+                            // SITUATION B: A 七殺 unlocked the blocking 七殺!
+                            if (currentDirection === 'left') {
+                                // Moving left -> pushed rightwards
+                                await pushReverseBump(hopper, fromX, curY, toX);
+                                if (shouldAbort()) { hopper.remove(); return; }
+                                outcome = 'reversed';
+                                break;
+                            } else {
+                                // Moving right -> trigger topple animation
+                                await bounceAwayAndFade(hopper, fromX, curY, toX, yPos);
+                                return;
+                            }
+                        } else {
+                            // SITUATION A: All rescue scenarios ran out -> draw red circle & pass over
+                            markQiShaBypassed(nextQiSha.elem, nextQiSha.char);
+                            justBypassed = true;
+                            await new Promise(r => setTimeout(r, 380));
+                            if (shouldAbort()) { hopper.remove(); return; }
+                        }
+                    }
+                }
+            }
+            // --- END HALF-STEP LOOKAHEAD ---
+
+            const success = await hopStep(hopper, fromX, curY, toX, yPos, 380, sessionId);
+            if (!success || shouldAbort()) { hopper.remove(); return; }
+            curSpot = nextSpot;
+
+            // Pause briefly on the bypassed 七殺 so the card visibly "sits on it" before passing over
+            if (justBypassed) {
+                await new Promise(r => setTimeout(r, 280));
+                if (shouldAbort()) { hopper.remove(); return; }
+            }
+
+            const result = await handleSpotInteractions(
+                curSpot, hopper, walkerScore, stemChar, isMain, originTooltip,
+                fromX, yPos, toX, gridInfo, currentDirection, hasVisitedOpposite
+            );
+            if (shouldAbort()) { hopper.remove(); return; }
+            if (result === 'toppled') return;
+            if (result === 'reverse') {
+                outcome = 'reversed';
+                break;
+            }
+        }
+
+        if (outcome === 'reversed') {
+            // Early push-back by a 七殺: flip direction immediately without touching the wall
+            currentDirection = (currentDirection === 'left') ? 'right' : 'left';
+            continue;
+        }
+
+        // Reached the LEFT end -> always bounce back to the RIGHT
+        if (currentDirection === 'left') {
+            if (shouldAbort()) { hopper.remove(); return; }
+            const spot1Obj = gridInfo.spots[1];
+            const wallY = isMain ? spot1Obj.mainY : spot1Obj.svgY;
+
+            await hopStep(hopper, spot1Obj.x, wallY, gridInfo.leftWallX, wallY, 280, sessionId);
+            if (shouldAbort()) { hopper.remove(); return; }
+            await hopStep(hopper, gridInfo.leftWallX, wallY, spot1Obj.x, wallY, 280, sessionId);
+            if (shouldAbort()) { hopper.remove(); return; }
+
+            curSpot = 1;
+            currentDirection = 'right';
+            continue;
+        }
+
+        // Reached the RIGHT end -> everything ends on the right end (never bounce back)
         if (shouldAbort()) { hopper.remove(); return; }
-        const nextSpot = curSpot - 1;
-        const curSpotObj = gridInfo.spots[curSpot];
-        const nextSpotObj = gridInfo.spots[nextSpot];
+        const lastSpotObj = gridInfo.spots[gridInfo.totalSpots];
+        const endY = isMain ? lastSpotObj.mainY : lastSpotObj.svgY;
 
-        const fromX = curSpotObj.x;
-        const toX = nextSpotObj.x;
-        const yPos = isMain ? nextSpotObj.mainY : nextSpotObj.svgY;
-
-        const success = await hopStep(hopper, fromX, yPos, toX, yPos, 380, sessionId);
-        if (!success || shouldAbort()) { hopper.remove(); return; }
-        curSpot = nextSpot;
-
-        const toppled = await handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPos, toX, gridInfo);
-        if (toppled || shouldAbort()) return;
-    }
-
-    // PHASE 2: BOUNCE OFF LEFT WALL
-    if (shouldAbort()) { hopper.remove(); return; }
-    const spot1Obj = gridInfo.spots[1];
-    const yPos = isMain ? spot1Obj.mainY : spot1Obj.svgY;
-
-    await hopStep(hopper, spot1Obj.x, yPos, gridInfo.leftWallX, yPos, 280, sessionId);
-    if (shouldAbort()) { hopper.remove(); return; }
-    await hopStep(hopper, gridInfo.leftWallX, yPos, spot1Obj.x, yPos, 280, sessionId);
-    if (shouldAbort()) { hopper.remove(); return; }
-    curSpot = 1;
-
-    // PHASE 3: MOVE RIGHT
-    while (curSpot < gridInfo.totalSpots) {
-        if (shouldAbort()) { hopper.remove(); return; }
-        const nextSpot = curSpot + 1;
-        const curSpotObj = gridInfo.spots[curSpot];
-        const nextSpotObj = gridInfo.spots[nextSpot];
-
-        const fromX = curSpotObj.x;
-        const toX = nextSpotObj.x;
-        const yPosCurrent = isMain ? nextSpotObj.mainY : nextSpotObj.svgY;
-
-        const success = await hopStep(hopper, fromX, yPosCurrent, toX, yPosCurrent, 380, sessionId);
-        if (!success || shouldAbort()) { hopper.remove(); return; }
-        curSpot = nextSpot;
-
-        const toppled = await handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPosCurrent, toX, gridInfo);
-        if (toppled || shouldAbort()) return;
-    }
-
-    // PHASE 4: FINISH AT RIGHT WALL
-    if (shouldAbort()) { hopper.remove(); return; }
-    const lastSpotObj = gridInfo.spots[gridInfo.totalSpots];
-    const yPosFinal = isMain ? lastSpotObj.mainY : lastSpotObj.svgY;
-
-    await hopStep(hopper, lastSpotObj.x, yPosFinal, gridInfo.rightWallX, yPosFinal, 320, sessionId);
-    if (!shouldAbort()) {
-        await fadeOutAndRemove(hopper);
-    } else {
-        hopper.remove();
+        await hopStep(hopper, lastSpotObj.x, endY, gridInfo.rightWallX, endY, 320, sessionId);
+        if (!shouldAbort()) {
+            await fadeOutAndRemove(hopper);
+        } else {
+            hopper.remove();
+        }
+        return;
     }
 } 
 
