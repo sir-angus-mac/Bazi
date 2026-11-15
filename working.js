@@ -55,6 +55,15 @@ function getLightOrangeBg() {
 }
 
 /**
+ * Marks a card as light orange (background only; border remains unchanged)
+ */
+function setCardOrange(tooltip) {
+    if (!tooltip) return;
+    tooltip.dataset.cardState = 'orange';
+    tooltip.style.setProperty('background-color', getLightOrangeBg(), 'important');
+}
+
+/**
  * Calculates the base 做功 score for a heavenly stem
  */
 function getZuoGongScore(targetElem, stemChar) {
@@ -588,7 +597,7 @@ function getBranchActivationType(activatorChar, targetChar) {
 
 /**
  * Animates the activator's own card along a U-curve (∪) path to strike
- * a target light-red card, triggers onImpact(), then swoops back home.
+ * a target card, triggers onImpact(), then swoops back home.
  */
 async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glowColor, sessionId, onImpact) {
     if (!isZuoGongMode || sessionId !== currentSessionId) return false;
@@ -671,7 +680,7 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
 
     if (!isZuoGongMode || sessionId !== currentSessionId) return false;
 
-    // 2. Strike impact! Activate the target card (turn it light orange)
+    // 2. Strike impact!
     if (typeof onImpact === 'function') {
         onImpact();
     }
@@ -697,8 +706,13 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
     activatorTooltip.style.borderColor = origBorder;
     activatorTooltip.style.boxShadow = origShadow;
 
+    // Ensure activator keeps its orange background if it became orange
+    if (activatorTooltip.dataset.cardState === 'orange') {
+        activatorTooltip.style.setProperty('background-color', getLightOrangeBg(), 'important');
+    }
+
     return isZuoGongMode && sessionId === currentSessionId;
-} 
+}
 
 async function handleBranchZuoGongClick(clickedElement, clickedChar) {
     if (!isZuoGongMode || isSimulationRunning) return;
@@ -820,9 +834,11 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         await new Promise(r => setTimeout(r, 220));
 
         // ====================================================================
-        // PHASE 3: Activate light-red cards from non-red cards (right to left),
-        //          and cascade whenever a hit card turns orange so it also
-        //          tries to activate remaining light-red cards.
+        // PHASE 3: Free-move cards (right to left) try to hit any other card
+        //          they can activate (whether light-red, normal, or already
+        //          hit). Both the activator and target turn/stay light orange
+        //          (background only), and any hit card also gets triggered to
+        //          try hitting other cards in a cascade.
         // ====================================================================
         const triggeredActivators = new Set();
 
@@ -833,16 +849,11 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
             const actCenter = getElemCenter(activator.elem);
 
-            // Check every currently light-red card (main or invisible)
-            const redTargets = branchCardEntries.filter(
-                entry => entry !== activator && entry.tooltip.dataset.cardState === 'red'
-            );
+            // Any other card (light-red, normal, or already orange) can be hit
+            const candidateTargets = branchCardEntries.filter(entry => entry !== activator);
 
-            for (const target of redTargets) {
+            for (const target of candidateTargets) {
                 if (!isZuoGongMode || sessionId !== currentSessionId) return;
-
-                // Re-check in case a previous chain already turned this target orange
-                if (target.tooltip.dataset.cardState !== 'red') continue;
 
                 const actType = getBranchActivationType(activator.char, target.char);
                 if (!actType) continue;
@@ -859,10 +870,9 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                     pulseColor,
                     sessionId,
                     () => {
-                        // Target card hit -> turns light orange + impact shake
-                        target.tooltip.dataset.cardState = 'orange';
-                        target.tooltip.style.backgroundColor = getLightOrangeBg();
-                        target.tooltip.style.borderColor = '#f59e0b';
+                        // Both target and activator turn/stay light orange (card bg only, not border)
+                        setCardOrange(target.tooltip);
+                        setCardOrange(activator.tooltip);
 
                         target.tooltip.animate([
                             { transform: 'translate(-50%, -50%) scale(1)' },
@@ -876,16 +886,16 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 if (!completed) return;
                 await new Promise(r => setTimeout(r, 150));
 
-                // Trigger the newly turned-orange card to activate other light-red cards
+                // Trigger the hit card so it also tries to hit other words it can activate
                 await runActivatorAttacks(target);
             }
         }
 
-        const nonRedActivators = branchCardEntries
+        const initialFreeActivators = branchCardEntries
             .filter(entry => entry.tooltip.dataset.cardState === 'normal')
             .sort((a, b) => b.x - a.x); // Right to left
 
-        for (const activator of nonRedActivators) {
+        for (const activator of initialFreeActivators) {
             if (!isZuoGongMode || sessionId !== currentSessionId) return;
             await runActivatorAttacks(activator);
         }
