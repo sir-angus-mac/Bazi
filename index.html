@@ -1814,8 +1814,14 @@
 
                 const isBoldSolid = !isBetweenLuckPillars && (isCase1 || isCase2 || isCase3 || isCase4 || isCase5 || isCase6);
 
+                const isCloseNeighbors = (sortedIndices[sortedIndices.length - 1] - sortedIndices[0] === 1);
+                const isHeRel = (rel.hiddenBranch === '合');
+                const isFadedSolid = isBoldSolid && !isCloseNeighbors && !isHeRel;
+
                 const strokeWidth = isBoldSolid ? 3.5 : 2;
                 const dashAttr = isBoldSolid ? '' : 'stroke-dasharray="4,4"';
+                const lineOpacityAttr = isFadedSolid ? 'stroke-opacity="0.3"' : '';
+                const dotOpacityAttr = isFadedSolid ? 'opacity="0.3"' : ''; 
                 // ======================================================== 
 
                 const hasHiddenBranch = Boolean(rel.hiddenBranch);
@@ -1824,12 +1830,12 @@
                     // 無生出字：橫線對半，垂線各隨母支
                     const strokeColor = (cLeft === cRight) ? cLeft : `url(#${gradId})`;
 
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} stroke-linecap="round" />`;
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} stroke-linecap="round" />`;
 
                     sortedIndices.forEach((idx, i) => {
                         const x = rel.getX(idx);
                         const dropColor = (i === 0) ? cLeft : cRight;
-                        svgHtml += `<line x1="${x}" y1="${yTop + 2}" x2="${x}" y2="${yBar}" stroke="${dropColor}" stroke-width="${strokeWidth}" ${dashAttr} stroke-linecap="round" />`;
+                        svgHtml += `<line x1="${x}" y1="${yTop + 2}" x2="${x}" y2="${yBar}" stroke="${dropColor}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} stroke-linecap="round" />`;
                     });
                 } else {
                     // 帶生出字 (如 亥酉拱戌, 子子生丑, 丑卯夾寅)
@@ -1842,22 +1848,22 @@
                     const boxStroke = (cLeft === cRight) ? cLeft : `url(#${boxGradId})`;
 
                     // 1. 左側垂直線 (完全取自左柱五行色)
-                    svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${cLeft}" stroke-width="${strokeWidth}" ${dashAttr} ${cap} />`;
+                    svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${cLeft}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} ${cap} />`;
                     // 2. 左側橫線 (完全取自左柱五行色)
-                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${cLeft}" stroke-width="${strokeWidth}" ${dashAttr} />`;
+                    svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${cLeft}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} />`;
                     // 3. 右側橫線 (完全取自右柱五行色)
-                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} />`;
+                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} />`;
                     // 4. 右側垂直線 (完全取自右柱五行色)
-                    svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} ${cap} />`;
+                    svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} ${cap} />`;
 
                     // 5. 中央方塊 (半半各 50% 或完全同色)
-                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${boxStroke}" stroke-width="${isBoldSolid ? 2.5 : 1.8}" />`;
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${boxStroke}" stroke-width="${isBoldSolid ? 2.5 : 1.8}" ${lineOpacityAttr} />`;
 
                     if (rel.hiddenBranch === "合") {
                         const displayColor = isDarkMode() ? "#e0e0e0" : "#222";
                         svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${displayColor}" onclick="event.stopPropagation();">合</text>`;
                     } else {
-                        // 文字本體保留生出地支自身的五行本色 (如 戌 本身仍顯示為土黃/褐色)
+                        // 文字本體保留生出地支自身的五行本色 (如 戌 本身仍顯示為土黃/褐色)，維持 100% 不透明度
                         const branchTextColor = rel.color ? getRelColor(rel.color) : (isDarkMode() ? "#e0e0e0" : "#222");
                         svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}'); toggleBranchHiddenStems(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
                     }
@@ -1867,11 +1873,11 @@
                     const x = rel.getX(idx);
                     const dotCol = getRelColor(getElementColor(branches[idx]));
                     if (hasHiddenBranch) {
-                        svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="3" fill="${dotCol}" />`;
+                        svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="3" fill="${dotCol}" ${dotOpacityAttr} />`;
                     } else {
-                        svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="5" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" />`;
+                        svgHtml += `<circle cx="${x}" cy="${yTop + 2}" r="5" fill="${dotCol}" stroke="var(--card-bg)" stroke-width="1.5" ${dotOpacityAttr} />`;
                     }
-                });
+                }); 
             }); 
 
             svgHtml += `</svg>`;
