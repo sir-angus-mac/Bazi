@@ -208,6 +208,7 @@ function spawnZuoGongTooltip(targetElem, char, customScore = null) {
 
     const tooltip = document.createElement('div');
     tooltip.className = `zuogong-tooltip ${isLarge ? 'large' : 'small'}`;
+    tooltip.dataset.cardKind = 'stem';
     tooltip.style.left = `${center.x}px`;
     tooltip.style.top = `${center.y}px`;
     tooltip.style.zIndex = "2000";
@@ -257,16 +258,83 @@ function addScoreToTooltip(tooltip, pointsToAdd) {
     }
 }
 
+
+function clearStemZuoGongTooltips() {
+    if (resolutionTimeout) {
+        clearTimeout(resolutionTimeout);
+        resolutionTimeout = null;
+    }
+
+    document.querySelectorAll('.zuogong-hopper, .zuogong-wait-badge').forEach(el => {
+        if (el.getAnimations) el.getAnimations().forEach(anim => anim.cancel());
+        el.remove();
+    });
+
+    for (const [elem, tooltip] of activeZuoGongTooltips.entries()) {
+        if (tooltip.dataset.cardKind !== 'branch') {
+            if (tooltip.getAnimations) tooltip.getAnimations().forEach(anim => anim.cancel());
+            tooltip.remove();
+            activeZuoGongTooltips.delete(elem);
+        }
+    }
+
+    activeWaitBadges.clear();
+    exhaustedStartPoints.clear();
+    bypassedQiShaElems.clear();
+}
+
+function clearBranchZuoGongTooltips() {
+    const invBranchSvg = document.querySelector('#invisibleBranchRelContainer svg');
+    if (invBranchSvg) {
+        invBranchSvg.querySelectorAll('line, rect, circle, text').forEach(el => {
+            if (el.getAnimations) el.getAnimations().forEach(anim => anim.cancel());
+        });
+    }
+
+    document.querySelectorAll('.zuogong-absorb-orb').forEach(el => {
+        if (el.getAnimations) el.getAnimations().forEach(anim => anim.cancel());
+        el.remove();
+    });
+
+    for (const [elem, tooltip] of activeZuoGongTooltips.entries()) {
+        if (tooltip.dataset.cardKind === 'branch') {
+            if (tooltip.getAnimations) tooltip.getAnimations().forEach(anim => anim.cancel());
+            tooltip.remove();
+            activeZuoGongTooltips.delete(elem);
+        }
+    }
+}
+
+async function dismissAllZuoGongTooltips() {
+    if (isSimulationRunning) return; // Prevent dismissing mid-animation
+
+    const branchTooltips = Array.from(
+        document.querySelectorAll('.zuogong-tooltip[data-card-kind="branch"]')
+    );
+    const fadePromises = branchTooltips.map(t => {
+        const anim = t.animate([
+            { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+            { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' }
+        ], { duration: 250, fill: 'forwards' });
+        return anim.finished.catch(() => {});
+    });
+
+    await Promise.all(fadePromises);
+    clearBranchZuoGongTooltips();
+}
+
 /**
- * Schedules the final fade-out of all active 做功 cards
+ * Schedules the final fade-out of Heavenly Stem 做功 cards only
  */
 function scheduleZuoGongFadeOut(delayMs = 2500) {
     if (resolutionTimeout) clearTimeout(resolutionTimeout);
     resolutionTimeout = setTimeout(async () => {
         if (isSimulationRunning) return;
 
-        const allTooltips = Array.from(document.querySelectorAll('.zuogong-tooltip'));
-        const fadePromises = allTooltips.map(t => {
+        const stemTooltips = Array.from(
+            document.querySelectorAll('.zuogong-tooltip:not([data-card-kind="branch"])')
+        );
+        const fadePromises = stemTooltips.map(t => {
             const anim = t.animate([
                 { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
                 { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' }
@@ -275,10 +343,10 @@ function scheduleZuoGongFadeOut(delayMs = 2500) {
         });
 
         await Promise.all(fadePromises);
-        clearAllZuoGongTooltips();
+        if (isSimulationRunning) return;
+        clearStemZuoGongTooltips();
     }, delayMs);
-}
-
+} 
 // ============================================================================
 // EARTHLY BRANCH (地支) 做功 SIMULATION
 // ============================================================================
@@ -727,6 +795,13 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
     const sessionId = currentSessionId;
     isSimulationRunning = true;
 
+    const onBranchCardClick = (e) => {
+        e.stopPropagation();
+        if (!isSimulationRunning) {
+            dismissAllZuoGongTooltips();
+        }
+    };
+
     try {
         const mainBranches = Array.from(document.querySelectorAll('#baziGrid .main-pillar-branch'))
             .sort((a, b) => parseInt(a.getAttribute('data-col') || 0, 10) - parseInt(b.getAttribute('data-col') || 0, 10));
@@ -749,8 +824,10 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
             const cardTooltip = spawnZuoGongTooltip(branchElem, branchChar, 0);
             if (!cardTooltip) continue;
+            cardTooltip.dataset.cardKind = 'branch';
             cardTooltip.dataset.cardState = 'normal';
             cardTooltip.style.transition = 'background-color 0.35s ease, border-color 0.35s ease';
+            cardTooltip.onclick = onBranchCardClick;
 
             const targetCenter = getElemCenter(branchElem);
 
@@ -814,9 +891,11 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 const tooltip = spawnZuoGongTooltip(svgBranchElem, branchChar, 5);
                 if (!tooltip) continue;
 
+                tooltip.dataset.cardKind = 'branch';
                 tooltip.dataset.cardState = 'red';
                 tooltip.style.backgroundColor = getLightRedBg();
                 tooltip.style.transition = 'background-color 0.35s ease, border-color 0.35s ease';
+                tooltip.onclick = onBranchCardClick; 
 
                 branchCardEntries.push({
                     elem: svgBranchElem,
@@ -834,11 +913,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         await new Promise(r => setTimeout(r, 220));
 
         // ====================================================================
-        // PHASE 3: Free-move cards (right to left) try to hit any other card
-        //          they can activate (whether light-red, normal, or already
-        //          hit). Both the activator and target turn/stay light orange
-        //          (background only), and any hit card also gets triggered to
-        //          try hitting other cards in a cascade.
+        // PHASE 3: Free-move cards (right to left) hit targets and cascade
         // ====================================================================
         const triggeredActivators = new Set();
 
@@ -848,8 +923,6 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
             triggeredActivators.add(activator);
 
             const actCenter = getElemCenter(activator.elem);
-
-            // Any other card (light-red, normal, or already orange) can be hit
             const candidateTargets = branchCardEntries.filter(entry => entry !== activator);
 
             for (const target of candidateTargets) {
@@ -870,7 +943,21 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                     pulseColor,
                     sessionId,
                     () => {
-                        // Both target and activator turn/stay light orange (card bg only, not border)
+                        const activatorScore = parseInt(activator.tooltip.dataset.score || '0', 10);
+                        const targetScore = parseInt(target.tooltip.dataset.score || '0', 10); 
+                        const halfActivatorScore = Math.ceil(activatorScore / 2);
+
+                        const isUnactivatedMainRed =
+                            target.isMain && target.tooltip.dataset.cardState === 'red';
+
+                        if (isUnactivatedMainRed) {
+                            // New score = (targetScore * 2) + Math.ceil(activatorScore / 2)
+                            addScoreToTooltip(target.tooltip, targetScore + halfActivatorScore);
+                        } else {
+                            // Add half of the hitting card's score (rounded up)
+                            addScoreToTooltip(target.tooltip, halfActivatorScore);
+                        }
+
                         setCardOrange(target.tooltip);
                         setCardOrange(activator.tooltip);
 
@@ -886,7 +973,6 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 if (!completed) return;
                 await new Promise(r => setTimeout(r, 150));
 
-                // Trigger the hit card so it also tries to hit other words it can activate
                 await runActivatorAttacks(target);
             }
         }
@@ -903,11 +989,8 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         console.error("Branch Zuo Gong simulation error:", err);
     } finally {
         isSimulationRunning = false;
-        if (isZuoGongMode && sessionId === currentSessionId) {
-            scheduleZuoGongFadeOut(2500);
-        }
     }
-}
+} 
 
 // ============================================================================
 // HEAVENLY STEM (天干) 做功 SIMULATION (Existing Logic Preserved)
