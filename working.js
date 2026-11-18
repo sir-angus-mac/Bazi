@@ -35,6 +35,29 @@ const zuoGongPianCaiDict = {
     '壬': '丙', '癸': '丁'
 };
 
+// 人元司令 Branch Multipliers (Rule 2)
+const renyuanBranchMultiplierRules = {
+    "甲": { normal: ["寅", "卯"], powerful: ["未"] },
+    "乙": { normal: ["寅", "卯"], powerful: ["未"] },
+    "丙": { normal: ["巳", "午"], powerful: ["戌"] },
+    "丁": { normal: ["巳", "午"], powerful: ["戌"] },
+    "戊": { normal: ["未", "丑", "辰"], powerful: ["戌"] },
+    "己": { normal: ["未", "丑", "辰"], powerful: ["戌"] },
+    "庚": { normal: ["申", "酉"], powerful: ["丑"] },
+    "辛": { normal: ["申", "酉"], powerful: ["丑"] },
+    "壬": { normal: ["子", "亥"], powerful: ["辰"] },
+    "癸": { normal: ["子", "亥"], powerful: ["辰"] }
+};
+
+function getRenyuanBranchMultiplier(renyuanStem, branchChar) {
+    if (!renyuanStem || !branchChar) return 1;
+    const rule = renyuanBranchMultiplierRules[renyuanStem];
+    if (!rule) return 1;
+    if (rule.powerful.includes(branchChar)) return 1.5;
+    if (rule.normal.includes(branchChar)) return 1.25;
+    return 1;
+}
+
 /**
  * Background color helpers for starting-point and state cards
  */
@@ -258,6 +281,28 @@ function addScoreToTooltip(tooltip, pointsToAdd) {
     }
 }
 
+/**
+ * Multiplies the score on a tooltip card and rounds up (Math.ceil)
+ */
+function multiplyTooltipScore(tooltip, multiplier) {
+    if (!tooltip || multiplier === 1) return false;
+    const currentScore = parseInt(tooltip.dataset.score || '0', 10);
+    if (currentScore === 0) return false;
+
+    const newScore = Math.ceil(currentScore * multiplier);
+    tooltip.dataset.score = newScore;
+
+    const numDiv = tooltip.querySelector('.zuogong-num');
+    if (numDiv && newScore !== currentScore) {
+        numDiv.textContent = newScore;
+        numDiv.animate([
+            { transform: 'scale(1.5)', color: '#ffd700' },
+            { transform: 'scale(1)', color: '#e67e22' }
+        ], { duration: 350, easing: 'ease-out' });
+        return true;
+    }
+    return false;
+}
 
 function clearStemZuoGongTooltips() {
     if (resolutionTimeout) {
@@ -346,7 +391,8 @@ function scheduleZuoGongFadeOut(delayMs = 2500) {
         if (isSimulationRunning) return;
         clearStemZuoGongTooltips();
     }, delayMs);
-} 
+}
+
 // ============================================================================
 // EARTHLY BRANCH (地支) 做功 SIMULATION
 // ============================================================================
@@ -664,6 +710,35 @@ function getBranchActivationType(activatorChar, targetChar) {
 }
 
 /**
+ * Rule 4 helper: Finds the main branch(es) directly above an invisible branch B:
+ * 1) In between two adjacent main branches [A][C]
+ * 2) Directly below a main branch [A]
+ */
+function getAboveMainBranchesForInvisible(bEntry, mainEntries, colSpacing) {
+    const tolerance = Math.max(15, colSpacing * 0.2);
+
+    // Case 2: Directly below a single main branch [A]
+    const directMatch = mainEntries.find(m => Math.abs(m.x - bEntry.x) <= tolerance);
+    if (directMatch) {
+        return [directMatch];
+    }
+
+    // Case 1: In between two adjacent main branches [A][C]
+    for (let i = 0; i < mainEntries.length - 1; i++) {
+        const left = mainEntries[i];
+        const right = mainEntries[i + 1];
+        if (right.colIdx - left.colIdx !== 1) continue;
+
+        const midX = (left.x + right.x) / 2;
+        if (Math.abs(midX - bEntry.x) <= tolerance) {
+            return [left, right];
+        }
+    }
+
+    return [];
+}
+
+/**
  * Animates the activator's own card along a U-curve (∪) path to strike
  * a target card, triggers onImpact(), then swoops back home.
  */
@@ -681,7 +756,7 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
 
     let p1, p2;
     if (dist < 35) {
-        // Target is directly below activator: swing slightly sideways so the U-loop stays visible
+        // Target is directly below/above activator: swing slightly sideways so the U-loop stays visible
         const swing = 55;
         p1 = { x: fromX + swing, y: bottomY };
         p2 = { x: toX + swing, y: bottomY };
@@ -808,8 +883,15 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
         if (mainBranches.length === 0) return;
 
+        const headers = Array.from(document.querySelectorAll('#baziGrid .bazi-header'))
+            .map(el => el.textContent.trim());
+
+        // Rule 2: Always check the 人元司令 element at the beginning of the score counting phase
+        const renyuanInfo = (typeof calculateRenyuanSiling === 'function') ? calculateRenyuanSiling() : null;
+        const renyuanStem = renyuanInfo ? renyuanInfo.X : null;
+
         const solidRels = getSolidInvisibleBranchRelationships();
-        const branchCardEntries = []; // Stores { elem, char, tooltip, isMain, x }
+        const branchCardEntries = []; // Stores { elem, char, tooltip, isMain, colIdx, x }
 
         // ====================================================================
         // PHASE 1: Ready every main-pillar-branch moving card (left to right)
@@ -821,6 +903,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
             if (!branchChar) continue;
 
             const colIdx = parseInt(branchElem.getAttribute('data-col') || 0, 10);
+            const pillarHeader = headers[colIdx] || '';
 
             const cardTooltip = spawnZuoGongTooltip(branchElem, branchChar, 0);
             if (!cardTooltip) continue;
@@ -854,6 +937,23 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 addScoreToTooltip(cardTooltip, 1);
             }
 
+            // Rule 2: Apply 人元司令 multiplier (rounded up)
+            const renyuanMult = getRenyuanBranchMultiplier(renyuanStem, branchChar);
+            if (multiplyTooltipScore(cardTooltip, renyuanMult)) {
+                await new Promise(r => setTimeout(r, 180));
+                if (!isZuoGongMode || sessionId !== currentSessionId) return;
+            }
+
+            // Rule 3: Multiply Month branch by 2 and Time branch by 1.5 (rounded up)
+            let pillarMult = 1;
+            if (pillarHeader === '月') pillarMult = 2;
+            else if (pillarHeader === '時') pillarMult = 1.5;
+
+            if (multiplyTooltipScore(cardTooltip, pillarMult)) {
+                await new Promise(r => setTimeout(r, 180));
+                if (!isZuoGongMode || sessionId !== currentSessionId) return;
+            }
+
             const blockingRels = linkedSolidRels.filter(rel => !rel.isFaded);
             if (blockingRels.length > 0) {
                 await blinkBlockingSvgRelationships(blockingRels, sessionId);
@@ -869,6 +969,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 char: branchChar,
                 tooltip: cardTooltip,
                 isMain: true,
+                colIdx,
                 x: targetCenter.x
             });
         }
@@ -895,13 +996,18 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 tooltip.dataset.cardState = 'red';
                 tooltip.style.backgroundColor = getLightRedBg();
                 tooltip.style.transition = 'background-color 0.35s ease, border-color 0.35s ease';
-                tooltip.onclick = onBranchCardClick; 
+                tooltip.onclick = onBranchCardClick;
+
+                // Rule 2: Apply 人元司令 multiplier to hidden branch cards too
+                const renyuanMult = getRenyuanBranchMultiplier(renyuanStem, branchChar);
+                multiplyTooltipScore(tooltip, renyuanMult);
 
                 branchCardEntries.push({
                     elem: svgBranchElem,
                     char: branchChar,
                     tooltip: tooltip,
                     isMain: false,
+                    colIdx: null,
                     x: getElemCenter(svgBranchElem).x
                 });
 
@@ -913,9 +1019,49 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         await new Promise(r => setTimeout(r, 220));
 
         // ====================================================================
+        // RULE 4 CHECK: Hidden branch B directly below [A] or between [A][C]
+        // If B can 沖 or 刑 (A or/and C), B can untrap itself without activation
+        // ====================================================================
+        const mainEntries = branchCardEntries
+            .filter(entry => entry.isMain)
+            .sort((a, b) => a.colIdx - b.colIdx);
+
+        const colSpacing = (mainEntries.length >= 2)
+            ? Math.abs(mainEntries[1].x - mainEntries[0].x) / Math.max(1, mainEntries[1].colIdx - mainEntries[0].colIdx)
+            : 98;
+
+        for (const entry of branchCardEntries) {
+            if (entry.isMain) continue;
+
+            const aboveTargets = getAboveMainBranchesForInvisible(entry, mainEntries, colSpacing);
+            const attackableAboveTargets = aboveTargets.filter(
+                tgt => getBranchActivationType(entry.char, tgt.char) !== null
+            );
+
+            if (attackableAboveTargets.length > 0) {
+                entry.canSelfUntrap = true;
+                entry.selfUntrapTargets = new Set(attackableAboveTargets);
+            }
+        }
+
+        // ====================================================================
         // PHASE 3: Free-move cards (right to left) hit targets and cascade
         // ====================================================================
         const triggeredActivators = new Set();
+        // Rule 1: Maps each card -> Set of cards that have already hit it
+        const hitByMap = new Map();
+
+        function recordHit(attacker, target) {
+            if (!hitByMap.has(target)) {
+                hitByMap.set(target, new Set());
+            }
+            hitByMap.get(target).add(attacker);
+        }
+
+        function hasBeenHitBy(victim, attacker) {
+            const attackers = hitByMap.get(victim);
+            return Boolean(attackers && attackers.has(attacker));
+        }
 
         async function runActivatorAttacks(activator) {
             if (!isZuoGongMode || sessionId !== currentSessionId) return;
@@ -923,13 +1069,35 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
             triggeredActivators.add(activator);
 
             const actCenter = getElemCenter(activator.elem);
-            const candidateTargets = branchCardEntries.filter(entry => entry !== activator);
+            let candidateTargets = branchCardEntries.filter(
+                entry => entry !== activator && !hasBeenHitBy(activator, entry)
+            );
+
+            // If B untrapped itself via Rule 4, prioritize its above [A]/[C] targets first
+            if (activator.canSelfUntrap && activator.selfUntrapTargets) {
+                candidateTargets.sort((a, b) => {
+                    const aPri = activator.selfUntrapTargets.has(a) ? 0 : 1;
+                    const bPri = activator.selfUntrapTargets.has(b) ? 0 : 1;
+                    return aPri - bPri;
+                });
+            }
 
             for (const target of candidateTargets) {
                 if (!isZuoGongMode || sessionId !== currentSessionId) return;
 
+                // Rule 1: Re-check in case target hit activator during an intermediate cascade
+                if (hasBeenHitBy(activator, target)) continue;
+
                 const actType = getBranchActivationType(activator.char, target.char);
                 if (!actType) continue;
+
+                // Record the hit before executing so target cannot hit activator back
+                recordHit(activator, target);
+
+                // If B was still red while self-untrapping, mark it orange as it launches
+                if (activator.canSelfUntrap && activator.tooltip.dataset.cardState === 'red') {
+                    setCardOrange(activator.tooltip);
+                }
 
                 const tgtCenter = getElemCenter(target.elem);
                 const pulseColor = (actType === 'chong') ? '#ff9800' : '#a855f7';
@@ -944,7 +1112,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                     sessionId,
                     () => {
                         const activatorScore = parseInt(activator.tooltip.dataset.score || '0', 10);
-                        const targetScore = parseInt(target.tooltip.dataset.score || '0', 10); 
+                        const targetScore = parseInt(target.tooltip.dataset.score || '0', 10);
                         const halfActivatorScore = Math.ceil(activatorScore / 2);
 
                         const isUnactivatedMainRed =
@@ -978,8 +1146,11 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         }
 
         const initialFreeActivators = branchCardEntries
-            .filter(entry => entry.tooltip.dataset.cardState === 'normal')
-            .sort((a, b) => b.x - a.x); // Right to left
+            .filter(entry => entry.tooltip.dataset.cardState === 'normal' || entry.canSelfUntrap)
+            .sort((a, b) => {
+                if (Math.abs(b.x - a.x) > 1) return b.x - a.x; // Right to left
+                return (a.isMain ? -1 : 1) - (b.isMain ? -1 : 1);
+            });
 
         for (const activator of initialFreeActivators) {
             if (!isZuoGongMode || sessionId !== currentSessionId) return;
@@ -990,7 +1161,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
     } finally {
         isSimulationRunning = false;
     }
-} 
+}
 
 // ============================================================================
 // HEAVENLY STEM (天干) 做功 SIMULATION (Existing Logic Preserved)
