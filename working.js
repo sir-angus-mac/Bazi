@@ -3,7 +3,14 @@
 
 let isZuoGongMode = false;
 let isSimulationRunning = false;
+let isStemScoreRevealed = false;
 let currentSessionId = 0;
+
+// Speed multiplier cycle: x1 -> x0.5 -> x2 -> x4 -> x1
+const zuoGongSpeedOptions = [1, 0.5, 2, 4];
+let zuoGongSpeedIndex = 0;
+let zuoGongSpeedMultiplier = 1;
+
 const activeZuoGongTooltips = new Map();
 const activeWaitBadges = new Map(); // key: spotIndex -> { count: number, element: HTMLElement }
 const exhaustedStartPoints = new Set(); // Tracks stem elements that have already spawned a moving card
@@ -12,18 +19,18 @@ const bypassedQiShaElems = new Set();   // Tracks trapped 七殺 that ran out of
 
 // 12 Life Stages Point Map (十二長生計分表)
 const zuoGongScoreMap = {
-    "長生": 2,
-    "沐浴": 3,
-    "冠帶": 5,
-    "臨官": 6,
-    "帝旺": 8,
-    "衰": 5,
-    "病": 4,
-    "死": 1,
-    "墓庫": 10,
-    "絕": 0,
-    "胎": 0,
-    "養": 0
+    "長生": 2 + 1,
+    "沐浴": 3 + 1,
+    "冠帶": 5 + 1,
+    "臨官": 6 + 1,
+    "帝旺": 8 + 1,
+    "衰": 5 + 1,
+    "病": 4 + 1,
+    "死": 1 + 1,
+    "墓庫": 10 + 1,
+    "絕": 0 + 1,
+    "胎": 0 + 1,
+    "養": 0 + 1
 };
 
 // 偏財 (Indirect Wealth) Mapping: Same-polarity element controlled (我剋者為偏財)
@@ -48,6 +55,33 @@ const renyuanBranchMultiplierRules = {
     "壬": { normal: ["子", "亥"], powerful: ["辰"] },
     "癸": { normal: ["子", "亥"], powerful: ["辰"] }
 };
+
+/**
+ * Cycles the animation speed for 做功 mode: x1 -> x0.5 -> x2 -> x4 -> x1
+ */
+function toggleZuoGongSpeed() {
+    zuoGongSpeedIndex = (zuoGongSpeedIndex + 1) % zuoGongSpeedOptions.length;
+    zuoGongSpeedMultiplier = zuoGongSpeedOptions[zuoGongSpeedIndex];
+
+    const speedBtn = document.getElementById('zuogongSpeedBtn');
+    if (speedBtn) {
+        speedBtn.textContent = `x${zuoGongSpeedMultiplier}`;
+    }
+}
+
+/**
+ * Scales animation durations and timeouts according to zuoGongSpeedMultiplier
+ */
+function scaleDuration(ms) {
+    const speed = (typeof zuoGongSpeedMultiplier === 'number' && zuoGongSpeedMultiplier > 0)
+        ? zuoGongSpeedMultiplier
+        : 1;
+    return Math.max(15, Math.round(ms / speed));
+}
+
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, scaleDuration(ms)));
+}
 
 function getRenyuanBranchMultiplier(renyuanStem, branchChar) {
     if (!renyuanStem || !branchChar) return 1;
@@ -174,6 +208,7 @@ function toggleZuoGongMode() {
 function clearAllZuoGongTooltips() {
     currentSessionId++;
     isSimulationRunning = false;
+    isStemScoreRevealed = false;
 
     if (resolutionTimeout) {
         clearTimeout(resolutionTimeout);
@@ -253,6 +288,11 @@ function spawnZuoGongTooltip(targetElem, char, customScore = null) {
 
     tooltip.onclick = (e) => {
         e.stopPropagation();
+        if (isSimulationRunning) return;
+        if (isStemScoreRevealed) {
+            dismissStemScores();
+            return;
+        }
         tooltip.remove();
         activeZuoGongTooltips.delete(targetElem);
     };
@@ -260,6 +300,63 @@ function spawnZuoGongTooltip(targetElem, char, customScore = null) {
     document.body.appendChild(tooltip);
     activeZuoGongTooltips.set(targetElem, tooltip);
     return tooltip;
+}
+
+/**
+ * Reveals every stem's card score on screen (both main pillar stems and invisibleStemRelContainer stems)
+ */
+function revealAllStemScores() {
+    const invStemContainer = document.getElementById('invisibleStemRelContainer');
+    if (invStemContainer && invStemContainer.style.display !== 'none') {
+        invStemContainer.classList.remove('collapsed');
+        if (typeof relContainerStates !== 'undefined') {
+            relContainerStates['invisibleStemRelContainer'] = false;
+        }
+    }
+
+    const mainStems = document.querySelectorAll('#baziGrid .main-pillar-stem');
+    const spawnedStems = document.querySelectorAll('#invisibleStemRelContainer text.spawned-stem');
+
+    const allStemElems = [...mainStems, ...spawnedStems];
+    let hasRevealedAny = false;
+
+    allStemElems.forEach(elem => {
+        const char = elem.textContent.trim();
+        if (!char || char === '合') return;
+
+        const tooltip = spawnZuoGongTooltip(elem, char);
+        if (tooltip) {
+            hasRevealedAny = true;
+        }
+    });
+
+    isStemScoreRevealed = hasRevealedAny;
+}
+
+/**
+ * Dismisses all revealed stem score cards on screen with a smooth fade-out
+ */
+async function dismissStemScores() {
+    if (isSimulationRunning) return;
+
+    isStemScoreRevealed = false;
+    const sessionId = currentSessionId;
+
+    const stemTooltips = Array.from(
+        document.querySelectorAll('.zuogong-tooltip:not([data-card-kind="branch"])')
+    );
+
+    const fadePromises = stemTooltips.map(t => {
+        const anim = t.animate([
+            { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+            { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' }
+        ], { duration: 220, fill: 'forwards' });
+        return anim.finished.catch(() => {});
+    });
+
+    await Promise.all(fadePromises);
+    if (sessionId !== currentSessionId) return;
+    clearStemZuoGongTooltips();
 }
 
 /**
@@ -277,7 +374,7 @@ function addScoreToTooltip(tooltip, pointsToAdd) {
         numDiv.animate([
             { transform: 'scale(1.5)', color: '#ffd700' },
             { transform: 'scale(1)', color: '#e67e22' }
-        ], { duration: 350, easing: 'ease-out' });
+        ], { duration: scaleDuration(350), easing: 'ease-out' });
     }
 }
 
@@ -298,13 +395,15 @@ function multiplyTooltipScore(tooltip, multiplier) {
         numDiv.animate([
             { transform: 'scale(1.5)', color: '#ffd700' },
             { transform: 'scale(1)', color: '#e67e22' }
-        ], { duration: 350, easing: 'ease-out' });
+        ], { duration: scaleDuration(350), easing: 'ease-out' });
         return true;
     }
     return false;
 }
 
 function clearStemZuoGongTooltips() {
+    isStemScoreRevealed = false;
+
     if (resolutionTimeout) {
         clearTimeout(resolutionTimeout);
         resolutionTimeout = null;
@@ -366,31 +465,6 @@ async function dismissAllZuoGongTooltips() {
 
     await Promise.all(fadePromises);
     clearBranchZuoGongTooltips();
-}
-
-/**
- * Schedules the final fade-out of Heavenly Stem 做功 cards only
- */
-function scheduleZuoGongFadeOut(delayMs = 2500) {
-    if (resolutionTimeout) clearTimeout(resolutionTimeout);
-    resolutionTimeout = setTimeout(async () => {
-        if (isSimulationRunning) return;
-
-        const stemTooltips = Array.from(
-            document.querySelectorAll('.zuogong-tooltip:not([data-card-kind="branch"])')
-        );
-        const fadePromises = stemTooltips.map(t => {
-            const anim = t.animate([
-                { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
-                { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' }
-            ], { duration: 500, fill: 'forwards' });
-            return anim.finished.catch(() => {});
-        });
-
-        await Promise.all(fadePromises);
-        if (isSimulationRunning) return;
-        clearStemZuoGongTooltips();
-    }, delayMs);
 }
 
 // ============================================================================
@@ -553,7 +627,7 @@ async function blinkOrbSourceRel(rel, sessionId) {
                     { strokeOpacity: 1, filter: `drop-shadow(0 0 8px ${glowColor})`, offset: 0.7 },
                     { strokeOpacity: 0.3, filter: 'none', offset: 1 }
                 ], {
-                    duration: 500,
+                    duration: scaleDuration(500),
                     easing: 'ease-in-out'
                 }).finished.catch(() => {});
             } else if (tag === 'circle') {
@@ -564,7 +638,7 @@ async function blinkOrbSourceRel(rel, sessionId) {
                     { opacity: 1, filter: `drop-shadow(0 0 8px ${glowColor})`, offset: 0.7 },
                     { opacity: 0.3, filter: 'none', offset: 1 }
                 ], {
-                    duration: 500,
+                    duration: scaleDuration(500),
                     easing: 'ease-in-out'
                 }).finished.catch(() => {});
             } else {
@@ -575,7 +649,7 @@ async function blinkOrbSourceRel(rel, sessionId) {
                     { filter: `drop-shadow(0 0 8px ${glowColor})`, offset: 0.7 },
                     { filter: 'none', offset: 1 }
                 ], {
-                    duration: 500,
+                    duration: scaleDuration(500),
                     easing: 'ease-in-out'
                 }).finished.catch(() => {});
             }
@@ -586,7 +660,7 @@ async function blinkOrbSourceRel(rel, sessionId) {
                 { opacity: 1, filter: `drop-shadow(0 0 8px ${glowColor})`, offset: 0.55 },
                 { opacity: 1, filter: 'none', offset: 1 }
             ], {
-                duration: 420,
+                duration: scaleDuration(420),
                 easing: 'ease-in-out'
             }).finished.catch(() => {});
         }
@@ -617,7 +691,7 @@ async function blinkBlockingSvgRelationships(blockingRels, sessionId) {
             { opacity: 0.15, filter: 'drop-shadow(0 0 8px #ff4d4f)', offset: 0.75 },
             { opacity: 1, filter: 'drop-shadow(0 0 0px #ff4d4f)', offset: 1 }
         ], {
-            duration: 650,
+            duration: scaleDuration(650),
             easing: 'ease-in-out'
         }).finished.catch(() => {})
     );
@@ -654,7 +728,7 @@ async function flyCircleToCard(fromX, fromY, toX, toY, color, sessionId) {
         { transform: `translate(-50%, -50%) translate(${dx * 0.5}px, ${dy * 0.5 - 24}px) scale(1.05)`, opacity: 1, offset: 0.6 },
         { transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0.15, offset: 1 }
     ], {
-        duration: 420,
+        duration: scaleDuration(420),
         easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
         fill: 'forwards'
     });
@@ -750,13 +824,11 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
     const dip = Math.max(85, Math.min(150, dist * 0.45));
     const bottomY = Math.max(fromY, toY) + dip;
 
-    // Build cubic Bezier control points forming a U-curve (∪)
     const p0 = { x: fromX, y: fromY };
     const p3 = { x: toX, y: toY };
 
     let p1, p2;
     if (dist < 35) {
-        // Target is directly below/above activator: swing slightly sideways so the U-loop stays visible
         const swing = 55;
         p1 = { x: fromX + swing, y: bottomY };
         p2 = { x: toX + swing, y: bottomY };
@@ -808,9 +880,8 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
     activatorTooltip.style.borderColor = glowColor;
     activatorTooltip.style.boxShadow = `0 8px 24px ${glowColor}`;
 
-    // 1. Fly out along the U-curve to attack the target card
     const outAnim = activatorTooltip.animate(outboundKeyframes, {
-        duration: 540,
+        duration: scaleDuration(540),
         easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
         fill: 'forwards'
     });
@@ -823,18 +894,15 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
 
     if (!isZuoGongMode || sessionId !== currentSessionId) return false;
 
-    // 2. Strike impact!
     if (typeof onImpact === 'function') {
         onImpact();
     }
 
-    // Brief hold at strike contact
-    await new Promise(r => setTimeout(r, 110));
+    await sleep(110);
     if (!isZuoGongMode || sessionId !== currentSessionId) return false;
 
-    // 3. Swoop back along the U-curve to home position
     const backAnim = activatorTooltip.animate(returnKeyframes, {
-        duration: 440,
+        duration: scaleDuration(440),
         easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
     });
 
@@ -844,12 +912,11 @@ async function animateUCurveAttack(activatorTooltip, fromX, fromY, toX, toY, glo
         return false;
     }
 
-    outAnim.cancel(); // Clear forwards hold so card rests cleanly at home
+    outAnim.cancel();
     activatorTooltip.style.zIndex = origZ || '2000';
     activatorTooltip.style.borderColor = origBorder;
     activatorTooltip.style.boxShadow = origShadow;
 
-    // Ensure activator keeps its orange background if it became orange
     if (activatorTooltip.dataset.cardState === 'orange') {
         activatorTooltip.style.setProperty('background-color', getLightOrangeBg(), 'important');
     }
@@ -886,16 +953,13 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         const headers = Array.from(document.querySelectorAll('#baziGrid .bazi-header'))
             .map(el => el.textContent.trim());
 
-        // Rule 2: Always check the 人元司令 element at the beginning of the score counting phase
         const renyuanInfo = (typeof calculateRenyuanSiling === 'function') ? calculateRenyuanSiling() : null;
         const renyuanStem = renyuanInfo ? renyuanInfo.X : null;
 
         const solidRels = getSolidInvisibleBranchRelationships();
-        const branchCardEntries = []; // Stores { elem, char, tooltip, isMain, colIdx, x }
+        const branchCardEntries = [];
 
-        // ====================================================================
         // PHASE 1: Ready every main-pillar-branch moving card (left to right)
-        // ====================================================================
         for (const branchElem of mainBranches) {
             if (!isZuoGongMode || sessionId !== currentSessionId) return;
 
@@ -914,7 +978,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
             const targetCenter = getElemCenter(branchElem);
 
-            await new Promise(r => setTimeout(r, 180));
+            await sleep(180);
             if (!isZuoGongMode || sessionId !== currentSessionId) return;
 
             const linkedSolidRels = solidRels.filter(rel => rel.indices.includes(colIdx));
@@ -937,20 +1001,18 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 addScoreToTooltip(cardTooltip, 1);
             }
 
-            // Rule 2: Apply 人元司令 multiplier (rounded up)
             const renyuanMult = getRenyuanBranchMultiplier(renyuanStem, branchChar);
             if (multiplyTooltipScore(cardTooltip, renyuanMult)) {
-                await new Promise(r => setTimeout(r, 180));
+                await sleep(180);
                 if (!isZuoGongMode || sessionId !== currentSessionId) return;
             }
 
-            // Rule 3: Multiply Month branch by 2 and Time branch by 1.5 (rounded up)
             let pillarMult = 1;
             if (pillarHeader === '月') pillarMult = 2;
             else if (pillarHeader === '時') pillarMult = 1.5;
 
             if (multiplyTooltipScore(cardTooltip, pillarMult)) {
-                await new Promise(r => setTimeout(r, 180));
+                await sleep(180);
                 if (!isZuoGongMode || sessionId !== currentSessionId) return;
             }
 
@@ -961,7 +1023,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
                 cardTooltip.dataset.cardState = 'red';
                 cardTooltip.style.backgroundColor = getLightRedBg();
-                await new Promise(r => setTimeout(r, 220));
+                await sleep(220);
             }
 
             branchCardEntries.push({
@@ -974,9 +1036,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
             });
         }
 
-        // ====================================================================
         // PHASE 2: Ready invisibleBranchRelContainer moving cards (score 5, light red)
-        // ====================================================================
         if (invBranchContainer && invBranchContainer.style.display !== 'none') {
             const spawnedBranchElems = Array.from(invBranchContainer.querySelectorAll('text.spawned-branch'))
                 .filter(el => {
@@ -998,7 +1058,6 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 tooltip.style.transition = 'background-color 0.35s ease, border-color 0.35s ease';
                 tooltip.onclick = onBranchCardClick;
 
-                // Rule 2: Apply 人元司令 multiplier to hidden branch cards too
                 const renyuanMult = getRenyuanBranchMultiplier(renyuanStem, branchChar);
                 multiplyTooltipScore(tooltip, renyuanMult);
 
@@ -1011,17 +1070,14 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                     x: getElemCenter(svgBranchElem).x
                 });
 
-                await new Promise(r => setTimeout(r, 120));
+                await sleep(120);
             }
         }
 
         if (!isZuoGongMode || sessionId !== currentSessionId) return;
-        await new Promise(r => setTimeout(r, 220));
+        await sleep(220);
 
-        // ====================================================================
-        // RULE 4 CHECK: Hidden branch B directly below [A] or between [A][C]
-        // If B can 沖 or 刑 (A or/and C), B can untrap itself without activation
-        // ====================================================================
+        // RULE 4 CHECK
         const mainEntries = branchCardEntries
             .filter(entry => entry.isMain)
             .sort((a, b) => a.colIdx - b.colIdx);
@@ -1044,11 +1100,8 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
             }
         }
 
-        // ====================================================================
         // PHASE 3: Free-move cards (right to left) hit targets and cascade
-        // ====================================================================
         const triggeredActivators = new Set();
-        // Rule 1: Maps each card -> Set of cards that have already hit it
         const hitByMap = new Map();
 
         function recordHit(attacker, target) {
@@ -1073,7 +1126,6 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 entry => entry !== activator && !hasBeenHitBy(activator, entry)
             );
 
-            // If B untrapped itself via Rule 4, prioritize its above [A]/[C] targets first
             if (activator.canSelfUntrap && activator.selfUntrapTargets) {
                 candidateTargets.sort((a, b) => {
                     const aPri = activator.selfUntrapTargets.has(a) ? 0 : 1;
@@ -1084,17 +1136,13 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
             for (const target of candidateTargets) {
                 if (!isZuoGongMode || sessionId !== currentSessionId) return;
-
-                // Rule 1: Re-check in case target hit activator during an intermediate cascade
                 if (hasBeenHitBy(activator, target)) continue;
 
                 const actType = getBranchActivationType(activator.char, target.char);
                 if (!actType) continue;
 
-                // Record the hit before executing so target cannot hit activator back
                 recordHit(activator, target);
 
-                // If B was still red while self-untrapping, mark it orange as it launches
                 if (activator.canSelfUntrap && activator.tooltip.dataset.cardState === 'red') {
                     setCardOrange(activator.tooltip);
                 }
@@ -1119,10 +1167,8 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                             target.isMain && target.tooltip.dataset.cardState === 'red';
 
                         if (isUnactivatedMainRed) {
-                            // New score = (targetScore * 2) + Math.ceil(activatorScore / 2)
                             addScoreToTooltip(target.tooltip, targetScore + halfActivatorScore);
                         } else {
-                            // Add half of the hitting card's score (rounded up)
                             addScoreToTooltip(target.tooltip, halfActivatorScore);
                         }
 
@@ -1134,12 +1180,12 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                             { transform: 'translate(-50%, -50%) translate(6px, -4px) scale(1.14)' },
                             { transform: 'translate(-50%, -50%) translate(-4px, 3px) scale(1.08)' },
                             { transform: 'translate(-50%, -50%) scale(1)' }
-                        ], { duration: 320, easing: 'ease-out' });
+                        ], { duration: scaleDuration(320), easing: 'ease-out' });
                     }
                 );
 
                 if (!completed) return;
-                await new Promise(r => setTimeout(r, 150));
+                await sleep(150);
 
                 await runActivatorAttacks(target);
             }
@@ -1148,7 +1194,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         const initialFreeActivators = branchCardEntries
             .filter(entry => entry.tooltip.dataset.cardState === 'normal' || entry.canSelfUntrap)
             .sort((a, b) => {
-                if (Math.abs(b.x - a.x) > 1) return b.x - a.x; // Right to left
+                if (Math.abs(b.x - a.x) > 1) return b.x - a.x;
                 return (a.isMain ? -1 : 1) - (b.isMain ? -1 : 1);
             });
 
@@ -1160,11 +1206,14 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         console.error("Branch Zuo Gong simulation error:", err);
     } finally {
         isSimulationRunning = false;
+        if (isZuoGongMode && sessionId === currentSessionId) {
+            revealAllStemScores();
+        }
     }
 }
 
 // ============================================================================
-// HEAVENLY STEM (天干) 做功 SIMULATION (Existing Logic Preserved)
+// HEAVENLY STEM (天干) 做功 SIMULATION
 // ============================================================================
 
 function markQiShaBypassed(qishaElem, qishaChar) {
@@ -1194,7 +1243,7 @@ function markQiShaBypassed(qishaElem, qishaChar) {
             { transform: 'translate(-50%, -50%) scale(0.4)', opacity: 0 },
             { transform: 'translate(-50%, -50%) scale(1.08)', opacity: 1, offset: 0.7 },
             { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }
-        ], { duration: 350, easing: 'ease-out', fill: 'forwards' });
+        ], { duration: scaleDuration(350), easing: 'ease-out', fill: 'forwards' });
     }
 }
 
@@ -1231,7 +1280,7 @@ function incrementWaitingSpot(spotIndex, x, y, isMain) {
         data.element.animate([
             { transform: 'translate(-50%, 0) scale(1.3)' },
             { transform: 'translate(-50%, 0) scale(1)' }
-        ], { duration: 220, easing: 'ease-out' });
+        ], { duration: scaleDuration(220), easing: 'ease-out' });
     }
 }
 
@@ -1248,7 +1297,7 @@ function decrementWaitingSpot(spotIndex) {
         data.element.animate([
             { transform: 'translate(-50%, 0) scale(0.8)' },
             { transform: 'translate(-50%, 0) scale(1)' }
-        ], { duration: 200, easing: 'ease-out' });
+        ], { duration: scaleDuration(200), easing: 'ease-out' });
     }
 }
 
@@ -1410,8 +1459,8 @@ async function flashGreenVictory(element) {
         { borderColor: '#2ecc71', boxShadow: '0 0 35px rgba(46, 204, 113, 1)', transform: 'translate(-50%, -50%) scale(1.16)', offset: 0.35 },
         { borderColor: '#2ecc71', boxShadow: '0 0 25px rgba(46, 204, 113, 0.9)', transform: 'translate(-50%, -50%) scale(1.12)', offset: 0.7 },
         { borderColor: '', boxShadow: '', transform: 'translate(-50%, -50%) scale(1)', offset: 1 }
-    ], { duration: 1000, easing: 'ease-in-out' });
-    await anim.finished;
+    ], { duration: scaleDuration(1000), easing: 'ease-in-out' });
+    await anim.finished.catch(() => {});
 }
 
 async function pushReverseBump(element, fromX, yPos, toX) {
@@ -1426,7 +1475,7 @@ async function pushReverseBump(element, fromX, yPos, toX) {
         { transform: 'translate(-50%, -50%) scale(1)', offset: 0 },
         { transform: `translate(-50%, -50%) translate(${pushDir * 14}px, -12px) scale(1.12)`, offset: 0.4 },
         { transform: 'translate(-50%, -50%) scale(1)', offset: 1 }
-    ], { duration: 320, easing: 'ease-out' });
+    ], { duration: scaleDuration(320), easing: 'ease-out' });
 
     try {
         await anim.finished;
@@ -1447,8 +1496,8 @@ async function bounceAwayAndFade(element, fromX, fromY, targetX, targetY) {
     const approachAnim = element.animate([
         { transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(1)`, offset: 0 },
         { transform: `translate(-50%, -50%) translate(${dx * 0.2}px, -10px) scale(1.1)`, offset: 1 }
-    ], { duration: 200, easing: 'ease-in' });
-    await approachAnim.finished;
+    ], { duration: scaleDuration(200), easing: 'ease-in' });
+    await approachAnim.finished.catch(() => {});
 
     element.style.borderColor = '#ff4d4f';
     element.style.boxShadow = '0 0 35px rgba(255, 77, 79, 0.95)';
@@ -1459,16 +1508,16 @@ async function bounceAwayAndFade(element, fromX, fromY, targetX, targetY) {
         { transform: `translate(-50%, -50%) translate(${dx * 0.2 - 8}px, -14px) scale(1.18)` },
         { transform: `translate(-50%, -50%) translate(${dx * 0.2 + 8}px, -6px) scale(1.14)` },
         { transform: `translate(-50%, -50%) translate(${dx * 0.2}px, -10px) scale(1.1)` }
-    ], { duration: 130, easing: 'linear' });
-    await impactShake.finished;
+    ], { duration: scaleDuration(130), easing: 'linear' });
+    await impactShake.finished.catch(() => {});
 
     const recoilAnim = element.animate([
         { transform: `translate(-50%, -50%) translate(${dx * 0.2}px, -10px) rotate(0deg) scale(1.1)`, opacity: 1, offset: 0 },
         { transform: `translate(-50%, -50%) translate(${dx * 0.2 + recoilDir * 50}px, -100px) rotate(${recoilDir * 45}deg) scale(1.05)`, opacity: 0.95, offset: 0.45 },
         { transform: `translate(-50%, -50%) translate(${dx * 0.2 + recoilDir * 95}px, -20px) rotate(${recoilDir * 90}deg) scale(0.85)`, opacity: 0.7, offset: 0.75 },
         { transform: `translate(-50%, -50%) translate(${dx * 0.2 + recoilDir * 130}px, 60px) rotate(${recoilDir * 140}deg) scale(0.35)`, opacity: 0, offset: 1 }
-    ], { duration: 650, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' });
-    await recoilAnim.finished;
+    ], { duration: scaleDuration(650), easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' });
+    await recoilAnim.finished.catch(() => {});
     element.remove();
 }
 
@@ -1512,7 +1561,7 @@ async function hopStep(element, fromX, fromY, toX, toY, duration = 380, sessionI
         { transform: `translate(-50%, -50%) translate(${deltaX}px, ${deltaY}px) scale(1)`, offset: 0 },
         { transform: `translate(-50%, -50%) translate(${deltaX * 0.5}px, ${deltaY * 0.5 - 32}px) scale(1.08)`, offset: 0.5 },
         { transform: `translate(-50%, -50%) translate(0px, 0px) scale(1)`, offset: 1 }
-    ], { duration, easing: 'ease-in-out' });
+    ], { duration: scaleDuration(duration), easing: 'ease-in-out' });
 
     try {
         await anim.finished;
@@ -1531,8 +1580,8 @@ async function fadeOutAndRemove(element) {
     const fade = element.animate([
         { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
         { opacity: 0, transform: 'translate(-50%, -50%) scale(0.6)' }
-    ], { duration: 320, fill: 'forwards' });
-    await fade.finished;
+    ], { duration: scaleDuration(320), fill: 'forwards' });
+    await fade.finished.catch(() => {});
     element.remove();
 }
 
@@ -1696,7 +1745,7 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo, initial
                         } else {
                             markQiShaBypassed(nextQiSha.elem, nextQiSha.char);
                             justBypassed = true;
-                            await new Promise(r => setTimeout(r, 380));
+                            await sleep(380);
                             if (shouldAbort()) { hopper.remove(); return; }
                         }
                     }
@@ -1708,7 +1757,7 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo, initial
             curSpot = nextSpot;
 
             if (justBypassed) {
-                await new Promise(r => setTimeout(r, 280));
+                await sleep(280);
                 if (shouldAbort()) { hopper.remove(); return; }
             }
 
@@ -1798,6 +1847,12 @@ async function handleZuoGongClick(clickedElement, stemChar) {
 
     if (isSimulationRunning) return;
 
+    // Clicking any stem while scores are revealed turns off revealing for every stem on screen
+    if (isStemScoreRevealed) {
+        await dismissStemScores();
+        return;
+    }
+
     if (resolutionTimeout) {
         clearTimeout(resolutionTimeout);
         resolutionTimeout = null;
@@ -1806,6 +1861,8 @@ async function handleZuoGongClick(clickedElement, stemChar) {
     const gridInfo = getSpotGridInfo();
     if (!gridInfo) return;
 
+    clearStemZuoGongTooltips();
+    const sessionId = ++currentSessionId;
     isSimulationRunning = true;
     const isMain = clickedElement.classList.contains('main-pillar-stem');
 
@@ -1815,7 +1872,9 @@ async function handleZuoGongClick(clickedElement, stemChar) {
         console.error("Zuo Gong simulation error:", err);
     } finally {
         isSimulationRunning = false;
-        scheduleZuoGongFadeOut(2500);
+        if (isZuoGongMode && sessionId === currentSessionId) {
+            revealAllStemScores();
+        }
     }
 }
 
