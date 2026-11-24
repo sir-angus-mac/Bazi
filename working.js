@@ -56,6 +56,28 @@ const renyuanBranchMultiplierRules = {
     "癸": { normal: ["子", "亥"], powerful: ["辰"] }
 };
 
+const AUX_PILLAR_HEADERS = new Set(["命宮", "胎元", "胎息", "身宮"]);
+
+function getBaziHeaders() {
+    return Array.from(document.querySelectorAll('#baziGrid .bazi-header'))
+        .map(el => el.textContent.trim());
+}
+
+function isAuxPillarCol(colIdx, headers = null) {
+    if (colIdx === null || colIdx === undefined || Number.isNaN(colIdx) || colIdx < 0) {
+        return false;
+    }
+    const headerList = headers || getBaziHeaders();
+    return AUX_PILLAR_HEADERS.has(headerList[colIdx]);
+}
+
+function isAuxPillarElem(elem) {
+    if (!elem || !elem.getAttribute) return false;
+    const colAttr = elem.getAttribute('data-col');
+    if (colAttr === null || colAttr === '') return false;
+    return isAuxPillarCol(parseInt(colAttr, 10));
+}
+
 /**
  * Cycles the animation speed for 做功 mode: x1 -> x0.5 -> x2 -> x4 -> x1
  */
@@ -138,6 +160,10 @@ function getZuoGongScore(targetElem, stemChar) {
         }
 
         if (colIdx !== -1 && colIdx !== null) {
+            // 命宮, 胎元, 胎息, 身宮 stems always start with a score of 1
+            if (isAuxPillarCol(parseInt(colIdx, 10))) {
+                return 1;
+            }
             const branchElem = document.querySelector(`.main-pillar-branch[data-col="${colIdx}"]`)
                 || document.querySelectorAll('.main-pillar-branch')[colIdx];
 
@@ -968,11 +994,16 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
 
             const colIdx = parseInt(branchElem.getAttribute('data-col') || 0, 10);
             const pillarHeader = headers[colIdx] || '';
+            const isAux = AUX_PILLAR_HEADERS.has(pillarHeader);
 
-            const cardTooltip = spawnZuoGongTooltip(branchElem, branchChar, 0);
+            // Auxiliary branches start at 1 and stay red (inactive) until activated
+            const cardTooltip = spawnZuoGongTooltip(branchElem, branchChar, isAux ? 1 : 0);
             if (!cardTooltip) continue;
             cardTooltip.dataset.cardKind = 'branch';
-            cardTooltip.dataset.cardState = 'normal';
+            cardTooltip.dataset.cardState = isAux ? 'red' : 'normal';
+            if (isAux) {
+                cardTooltip.style.backgroundColor = getLightRedBg();
+            }
             cardTooltip.style.transition = 'background-color 0.35s ease, border-color 0.35s ease';
             cardTooltip.onclick = onBranchCardClick;
 
@@ -981,49 +1012,51 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
             await sleep(180);
             if (!isZuoGongMode || sessionId !== currentSessionId) return;
 
-            const linkedSolidRels = solidRels.filter(rel => rel.indices.includes(colIdx));
+            if (!isAux) {
+                const linkedSolidRels = solidRels.filter(rel => rel.indices.includes(colIdx));
 
-            for (const rel of linkedSolidRels) {
-                if (!isZuoGongMode || sessionId !== currentSessionId) return;
+                for (const rel of linkedSolidRels) {
+                    if (!isZuoGongMode || sessionId !== currentSessionId) return;
 
-                const blinkPromise = blinkOrbSourceRel(rel, sessionId);
-                const absorbed = await flyCircleToCard(
-                    rel.centerX,
-                    rel.centerY,
-                    targetCenter.x,
-                    targetCenter.y,
-                    rel.orbColor,
-                    sessionId
-                );
-                await blinkPromise;
+                    const blinkPromise = blinkOrbSourceRel(rel, sessionId);
+                    const absorbed = await flyCircleToCard(
+                        rel.centerX,
+                        rel.centerY,
+                        targetCenter.x,
+                        targetCenter.y,
+                        rel.orbColor,
+                        sessionId
+                    );
+                    await blinkPromise;
 
-                if (!absorbed) return;
-                addScoreToTooltip(cardTooltip, 1);
-            }
+                    if (!absorbed) return;
+                    addScoreToTooltip(cardTooltip, 1);
+                }
 
-            const renyuanMult = getRenyuanBranchMultiplier(renyuanStem, branchChar);
-            if (multiplyTooltipScore(cardTooltip, renyuanMult)) {
-                await sleep(180);
-                if (!isZuoGongMode || sessionId !== currentSessionId) return;
-            }
+                const renyuanMult = getRenyuanBranchMultiplier(renyuanStem, branchChar);
+                if (multiplyTooltipScore(cardTooltip, renyuanMult)) {
+                    await sleep(180);
+                    if (!isZuoGongMode || sessionId !== currentSessionId) return;
+                }
 
-            let pillarMult = 1;
-            if (pillarHeader === '月') pillarMult = 2;
-            else if (pillarHeader === '時') pillarMult = 1.5;
+                let pillarMult = 1;
+                if (pillarHeader === '月') pillarMult = 2;
+                else if (pillarHeader === '時') pillarMult = 1.5;
 
-            if (multiplyTooltipScore(cardTooltip, pillarMult)) {
-                await sleep(180);
-                if (!isZuoGongMode || sessionId !== currentSessionId) return;
-            }
+                if (multiplyTooltipScore(cardTooltip, pillarMult)) {
+                    await sleep(180);
+                    if (!isZuoGongMode || sessionId !== currentSessionId) return;
+                }
 
-            const blockingRels = linkedSolidRels.filter(rel => !rel.isFaded);
-            if (blockingRels.length > 0) {
-                await blinkBlockingSvgRelationships(blockingRels, sessionId);
-                if (!isZuoGongMode || sessionId !== currentSessionId) return;
+                const blockingRels = linkedSolidRels.filter(rel => !rel.isFaded);
+                if (blockingRels.length > 0) {
+                    await blinkBlockingSvgRelationships(blockingRels, sessionId);
+                    if (!isZuoGongMode || sessionId !== currentSessionId) return;
 
-                cardTooltip.dataset.cardState = 'red';
-                cardTooltip.style.backgroundColor = getLightRedBg();
-                await sleep(220);
+                    cardTooltip.dataset.cardState = 'red';
+                    cardTooltip.style.backgroundColor = getLightRedBg();
+                    await sleep(220);
+                }
             }
 
             branchCardEntries.push({
@@ -1031,10 +1064,11 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                 char: branchChar,
                 tooltip: cardTooltip,
                 isMain: true,
+                isAux: isAux,
                 colIdx,
                 x: targetCenter.x
             });
-        }
+        } 
 
         // PHASE 2: Ready invisibleBranchRelContainer moving cards (score 5, light red)
         if (invBranchContainer && invBranchContainer.style.display !== 'none') {
@@ -1164,8 +1198,7 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
                         const halfActivatorScore = Math.ceil(activatorScore / 2);
 
                         const isUnactivatedMainRed =
-                            target.isMain && target.tooltip.dataset.cardState === 'red';
-
+                            target.isMain && !target.isAux && target.tooltip.dataset.cardState === 'red'; 
                         if (isUnactivatedMainRed) {
                             addScoreToTooltip(target.tooltip, targetScore + halfActivatorScore);
                         } else {
@@ -1400,6 +1433,9 @@ function findStartingSpot(elem, isMain, gridInfo) {
 function isStemTrapped(elem, char, isMain, gridInfo) {
     if (!isMain) return true;
 
+    // 命宮, 胎元, 胎息, 身宮 stems cannot move on their own until activated
+    if (isAuxPillarElem(elem)) return true;
+
     const col = parseInt(elem.getAttribute('data-col'), 10);
     const mainStems = gridInfo.mainStems.map(el => el.textContent.trim());
     const headers = Array.from(document.querySelectorAll('#baziGrid .bazi-header')).map(el => el.textContent.trim());
@@ -1424,7 +1460,12 @@ function isStemTrapped(elem, char, isMain, gridInfo) {
         }
 
         for (const rel of rels) {
-            const isBoldSolid = (rel.type === 'same_neighbor' || rel.type === 'neighbor' || rel.type === 'he_yin');
+            const isBoldSolid = (
+                rel.type === 'same_neighbor' ||
+                rel.type === 'neighbor' ||
+                rel.type === 'he_yin' ||
+                rel.type === 'two_same' // Syncs with Step 6 (solid line for separated same stems)
+            );
             if (isBoldSolid && rel.indices && rel.indices.includes(col)) {
                 return true;
             }
@@ -1585,7 +1626,7 @@ async function fadeOutAndRemove(element) {
     element.remove();
 }
 
-async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPos, toX, gridInfo, direction, hasVisitedOpposite) {
+async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, isMain, originTooltip, fromX, yPos, toX, gridInfo, direction, hasVisitedOpposite, originElem = null) {
     const targetPianCaiChar = zuoGongPianCaiDict[stemChar];
     const targetQiShaChar = (typeof qiShaDict !== 'undefined') ? qiShaDict[stemChar] : null;
     const stemsHere = getStemsAtSpot(curSpot, gridInfo);
@@ -1594,12 +1635,12 @@ async function handleSpotInteractions(curSpot, hopper, walkerScore, stemChar, is
         const mainQishaCandidate = stemsHere.find(st => st.char === targetQiShaChar && st.isMain);
 
         if (mainQishaCandidate) {
+            const bothAux = originElem && isAuxPillarElem(originElem) && isAuxPillarElem(mainQishaCandidate.elem);
             const isExhausted = exhaustedStartPoints.has(mainQishaCandidate.elem);
             const isBypassed = bypassedQiShaElems.has(mainQishaCandidate.elem);
 
-            if (!isExhausted && !isBypassed) {
-                const qishaScore = getEffectiveScore(mainQishaCandidate.elem, mainQishaCandidate.char);
-
+            if (!bothAux && !isExhausted && !isBypassed) {
+                const qishaScore = getEffectiveScore(mainQishaCandidate.elem, mainQishaCandidate.char); 
                 if (qishaScore >= walkerScore) {
                     spawnZuoGongTooltip(mainQishaCandidate.elem, mainQishaCandidate.char);
 
@@ -1714,9 +1755,11 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo, initial
             if (isMain && targetQiShaChar && nextSpotObj.isPillar) {
                 const nextStems = getStemsAtSpot(nextSpot, gridInfo);
                 const nextQiSha = nextStems.find(st => st.char === targetQiShaChar && st.isMain);
+                const bothAux = nextQiSha && isAuxPillarElem(stemElem) && isAuxPillarElem(nextQiSha.elem);
 
                 if (
                     nextQiSha &&
+                    !bothAux &&
                     !exhaustedStartPoints.has(nextQiSha.elem) &&
                     !bypassedQiShaElems.has(nextQiSha.elem)
                 ) {
@@ -1763,8 +1806,8 @@ async function walkWord(stemElem, stemChar, isMain, startSpot, gridInfo, initial
 
             const result = await handleSpotInteractions(
                 curSpot, hopper, walkerScore, stemChar, isMain, originTooltip,
-                fromX, yPos, toX, gridInfo, currentDirection, hasVisitedOpposite
-            );
+                fromX, yPos, toX, gridInfo, currentDirection, hasVisitedOpposite, stemElem
+            ); 
             if (shouldAbort()) { hopper.remove(); return; }
             if (result === 'toppled') return;
             if (result === 'reverse') {
@@ -1828,13 +1871,19 @@ async function requestRescueOrWalk(stemElem, stemChar, isMain, gridInfo, visited
         const neededQiSha = (typeof qiShaDict !== 'undefined') ? qiShaDict[stemChar] : null;
         if (!neededQiSha) return;
 
-        const candidates = findStemCandidates(neededQiSha, gridInfo);
+        let candidates = findStemCandidates(neededQiSha, gridInfo);
+
+        // Stems in 命宮, 胎元, 胎息, 身宮 can only be activated by stems on their right
+        if (isAuxPillarElem(stemElem)) {
+            const mySpot = findStartingSpot(stemElem, isMain, gridInfo);
+            candidates = candidates.filter(c => findStartingSpot(c.elem, c.isMain, gridInfo) > mySpot);
+        }
 
         for (const rescuer of candidates) {
             if (!visited.has(rescuer.elem) && !exhaustedStartPoints.has(rescuer.elem)) {
                 await requestRescueOrWalk(rescuer.elem, rescuer.char, rescuer.isMain, gridInfo, visited);
             }
-        }
+        } 
     }
 }
 

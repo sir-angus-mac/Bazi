@@ -1420,7 +1420,7 @@
                 `;
 
                 // ================= 【嚴格實線/虛線判定】 =================
-                // 1. 相鄰同干緊貼 (如 丙丙)
+                // 1. 相鄰同干緊貼 (如 丙丙)  
                 const isCase1 = (rel.type === 'same_neighbor');
 
                 // 2. 嚴格十天干連茹相鄰 (如 丙丁、丁戊；丁己不是鄰居，不在此列！)
@@ -1429,8 +1429,10 @@
                 // 3. 天干正合 (如 甲己、乙庚、丙辛、丁壬、戊癸，無論距離)
                 const isCase3 = (rel.type === 'he_yin');
 
-                // 僅此 3 種為粗實線，其餘（包含 丁己夾戊、丙戊夾丁、隔位丙O丙）一律為虛線
-                const isBoldSolid = isCase1 || isCase2 || isCase3;
+                // 4. 隔位同干 (如 庚OO庚、己OO己)
+                const isCase4 = (rel.type === 'two_same');
+
+                const isBoldSolid = isCase1 || isCase2 || isCase3 || isCase4;
 
                 let strokeWidth = isBoldSolid ? 3.5 : 2;
                 if (isCase1) strokeWidth = 5;
