@@ -552,7 +552,7 @@ function getSolidInvisibleBranchRelationships() {
 
         const sortedIndices = [...rel.indices].sort((a, b) => a - b);
         const isCloseNeighbors = (sortedIndices[sortedIndices.length - 1] - sortedIndices[0] === 1);
-        const isHeRel = (rel.hiddenBranch === '合');
+        const isHeRel = (rel.type === 'liuhe'); 
         const isFaded = !isCloseNeighbors && !isHeRel;
 
         const yTop = rel.layer * layerHeight + 6;
@@ -1073,9 +1073,9 @@ async function handleBranchZuoGongClick(clickedElement, clickedChar) {
         // PHASE 2: Ready invisibleBranchRelContainer moving cards (score 5, light red)
         if (invBranchContainer && invBranchContainer.style.display !== 'none') {
             const spawnedBranchElems = Array.from(invBranchContainer.querySelectorAll('text.spawned-branch'))
-                .filter(el => {
+                .filter(el => { 
                     const txt = el.textContent.trim();
-                    return txt && txt !== '合';
+                    return txt && typeof deizi_order !== 'undefined' && deizi_order.includes(txt);
                 })
                 .sort((a, b) => getElemCenter(a).x - getElemCenter(b).x);
 

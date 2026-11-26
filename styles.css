@@ -382,6 +382,11 @@ body {
     pointer-events: auto;
 }
 
+#invisibleBranchRelContainer text.spawned-branch-static {
+    cursor: default;
+    pointer-events: auto;
+} 
+
 .bar-label-vertical {
     position: sticky;
     left: -12px;

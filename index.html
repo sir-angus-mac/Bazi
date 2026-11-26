@@ -1612,15 +1612,27 @@
                         continue;
                     }
 
-                    // 規則 2: 異字六合 (子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未) -> 粗實線，引出字為 "合"
+                    // 六合化映射表
+                    const liuHeHuaMap = {
+                        "巳_申": "子", "申_巳": "子",
+                        "寅_亥": "卯", "亥_寅": "卯",
+                        "子_丑": "土", "丑_子": "土",
+                        "卯_戌": "午", "戌_卯": "午",
+                        "辰_酉": "酉", "酉_辰": "酉",
+                        "午_未": "火/土", "未_午": "火/土"
+                    };
+
+                    // 規則 2: 異字六合 (子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未)
                     if (isLiuHe(b1, b2)) {
                         const key = `liuhe_${i}_${j}`;
                         if (!seen.has(key)) {
                             seen.add(key);
+                            const transformed = liuHeHuaMap[`${b1}_${b2}`] || '合';
                             results.push({
                                 type: 'liuhe',
                                 indices: [i, j],
-                                hiddenBranch: '合'
+                                hiddenBranch: transformed,
+                                color: (transformed !== '合' && transformed !== '火/土') ? getElementColor(transformed) : null
                             });
                         }
                         continue;
@@ -1818,7 +1830,7 @@
                 const isBoldSolid = !isBetweenLuckPillars && (isCase1 || isCase2 || isCase3 || isCase4 || isCase5 || isCase6);
 
                 const isCloseNeighbors = (sortedIndices[sortedIndices.length - 1] - sortedIndices[0] === 1);
-                const isHeRel = (rel.hiddenBranch === '合');
+                const isHeRel = (rel.type === 'liuhe');
                 const isFadedSolid = isBoldSolid && !isCloseNeighbors && !isHeRel;
 
                 const strokeWidth = isBoldSolid ? 3.5 : 2;
@@ -1840,35 +1852,60 @@
                         const dropColor = (i === 0) ? cLeft : cRight;
                         svgHtml += `<line x1="${x}" y1="${yTop + 2}" x2="${x}" y2="${yBar}" stroke="${dropColor}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} stroke-linecap="round" />`;
                     });
-                } else {
-                    // 帶生出字 (如 亥酉拱戌, 子子生丑, 丑卯夾寅)
+                } else { 
+                    // 帶生出字 (如 亥酉拱戌, 子子生丑, 丑卯夾寅, 或六合/合化)
+                    let displayBranch = rel.hiddenBranch;
+                    if (!isHeHuaEnabled && rel.type === 'liuhe') {
+                        displayBranch = "合";
+                    }
+
+                    const isStatic = (displayBranch === "合" || displayBranch === "土" || displayBranch === "火/土");
                     const boxSize = 26;
-                    const boxX = midX - boxSize / 2;
+                    const boxWidth = (displayBranch === "火/土") ? 40 : boxSize; // Wider box for 3 characters "火/土"
+                    const boxX = midX - boxWidth / 2;
                     const boxY = yBar - boxSize / 2;
 
                     const cap = isBoldSolid ? 'stroke-linecap="round"' : '';
-                    // 若父母五行相同為純色，若不同則為半半漸變色
                     const boxStroke = (cLeft === cRight) ? cLeft : `url(#${boxGradId})`;
 
-                    // 1. 左側垂直線 (完全取自左柱五行色)
+                    // 1. 左側垂直線 & 橫線
                     svgHtml += `<line x1="${minX}" y1="${yTop + 2}" x2="${minX}" y2="${yBar}" stroke="${cLeft}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} ${cap} />`;
-                    // 2. 左側橫線 (完全取自左柱五行色)
                     svgHtml += `<line x1="${minX}" y1="${yBar}" x2="${boxX}" y2="${yBar}" stroke="${cLeft}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} />`;
-                    // 3. 右側橫線 (完全取自右柱五行色)
-                    svgHtml += `<line x1="${boxX + boxSize}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} />`;
-                    // 4. 右側垂直線 (完全取自右柱五行色)
+                    // 2. 右側橫線 & 垂直線 (uses boxX + boxWidth)
+                    svgHtml += `<line x1="${boxX + boxWidth}" y1="${yBar}" x2="${maxX}" y2="${yBar}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} />`;
                     svgHtml += `<line x1="${maxX}" y1="${yBar}" x2="${maxX}" y2="${yTop + 2}" stroke="${cRight}" stroke-width="${strokeWidth}" ${dashAttr} ${lineOpacityAttr} ${cap} />`;
 
-                    // 5. 中央方塊 (半半各 50% 或完全同色)
-                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${boxStroke}" stroke-width="${isBoldSolid ? 2.5 : 1.8}" ${lineOpacityAttr} />`;
+                    // 3. 中央方塊
+                    svgHtml += `<rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxSize}" rx="4" ry="4" fill="var(--card-bg)" stroke="${boxStroke}" stroke-width="${isBoldSolid ? 2.5 : 1.8}" ${lineOpacityAttr} />`;
 
-                    if (rel.hiddenBranch === "合") {
+                    // 4. 文字繪製
+                    if (displayBranch === "合") {
                         const displayColor = isDarkMode() ? "#e0e0e0" : "#222";
-                        svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${displayColor}" onclick="event.stopPropagation();">合</text>`;
+                        svgHtml += `<text class="spawned-branch-static" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${displayColor}" onclick="event.stopPropagation();">合</text>`;
+                    } else if (displayBranch === "火/土") {
+                        const cRed = getRelColor("red");
+                        const cBrown = getRelColor("brown");
+                        const fireEarthTextGradId = `invFireEarthText_${k}`;
+                        svgHtml += `
+                            <defs>
+                                <linearGradient id="${fireEarthTextGradId}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="${cRed}" />
+                                    <stop offset="50%" stop-color="${cRed}" />
+                                    <stop offset="50%" stop-color="${cBrown}" />
+                                    <stop offset="100%" stop-color="${cBrown}" />
+                                </linearGradient>
+                            </defs>
+                        `;
+                        // No "spawned-branch" class -> arrows & 做功 will completely ignore it
+                        svgHtml += `<text class="spawned-branch-static" x="${midX}" y="${yBar + 5}" font-size="14" font-weight="700" text-anchor="middle" fill="url(#${fireEarthTextGradId})" onclick="event.stopPropagation();">火/土</text>`;
+                    } else if (displayBranch === "土") {
+                        const brownColor = getRelColor(getElementColor("土"));
+                        // No "spawned-branch" class -> arrows & 做功 will completely ignore it
+                        svgHtml += `<text class="spawned-branch-static" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${brownColor}" onclick="event.stopPropagation();">土</text>`;
                     } else {
-                        // 文字本體保留生出地支自身的五行本色 (如 戌 本身仍顯示為土黃/褐色)，維持 100% 不透明度
+                        // Active branches (子, 卯, 午, 酉, plus normal 拱/夾 branches)
                         const branchTextColor = rel.color ? getRelColor(rel.color) : (isDarkMode() ? "#e0e0e0" : "#222");
-                        svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${rel.hiddenBranch}'); drawXingArrows(this, '${rel.hiddenBranch}'); toggleBranchHiddenStems(this, '${rel.hiddenBranch}');">${rel.hiddenBranch}</text>`;
+                        svgHtml += `<text class="spawned-branch" x="${midX}" y="${yBar + 6}" font-size="16" font-weight="700" text-anchor="middle" fill="${branchTextColor}" onclick="event.stopPropagation(); triggerDizhiArrows(this, '${displayBranch}'); drawXingArrows(this, '${displayBranch}'); toggleBranchHiddenStems(this, '${displayBranch}');">${displayBranch}</text>`;
                     }
                 }
 
